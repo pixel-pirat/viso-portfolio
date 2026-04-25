@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { navItems } from "@/data/site";
 import { cn } from "@/lib/utils";
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -51,7 +52,8 @@ const Navbar = () => {
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
           <Button asChild variant="hero" size="sm">
             <Link to="/contact">Start a Project</Link>
           </Button>
@@ -85,6 +87,9 @@ const Navbar = () => {
                 {item.label}
               </NavLink>
             ))}
+            <div className="px-2 py-3">
+              <ThemeToggle />
+            </div>
             <Button asChild variant="hero" className="mt-2">
               <Link to="/contact" onClick={() => setOpen(false)}>Start a Project</Link>
             </Button>
