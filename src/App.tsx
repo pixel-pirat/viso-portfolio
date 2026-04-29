@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "./components/Layout";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { StudioProvider } from "./store/StudioStore";
+import { AdminAuthProvider } from "./admin/AdminAuth";
 import Home from "./pages/Home";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
@@ -15,33 +17,60 @@ import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound.tsx";
+import AdminLayout from "./admin/AdminLayout";
+import Dashboard from "./admin/Dashboard";
+import ProjectsAdmin from "./admin/ProjectsAdmin";
+import ServicesAdmin from "./admin/ServicesAdmin";
+import BlogAdmin from "./admin/BlogAdmin";
+import HeroAdmin from "./admin/HeroAdmin";
+import BookingsAdmin from "./admin/BookingsAdmin";
+import UsersAdmin from "./admin/UsersAdmin";
+import AnalyticsAdmin from "./admin/AnalyticsAdmin";
+import SettingsAdmin from "./admin/SettingsAdmin";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/services/:slug" element={<ServiceDetail />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/:slug" element={<ProjectDetail />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogDetail />} />
-            <Route path="/contact" element={<Contact />} />
-          </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+      <StudioProvider>
+        <AdminAuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/services/:slug" element={<ServiceDetail />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects/:slug" element={<ProjectDetail />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogDetail />} />
+                  <Route path="/contact" element={<Contact />} />
+                </Route>
+
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="projects" element={<ProjectsAdmin />} />
+                  <Route path="services" element={<ServicesAdmin />} />
+                  <Route path="blog" element={<BlogAdmin />} />
+                  <Route path="hero" element={<HeroAdmin />} />
+                  <Route path="bookings" element={<BookingsAdmin />} />
+                  <Route path="users" element={<UsersAdmin />} />
+                  <Route path="analytics" element={<AnalyticsAdmin />} />
+                  <Route path="settings" element={<SettingsAdmin />} />
+                </Route>
+
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AdminAuthProvider>
+      </StudioProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
