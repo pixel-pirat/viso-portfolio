@@ -1,5 +1,6 @@
 import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
+import { useStudio } from "@/store/StudioStore";
 
 const skills = [
   "React", "TypeScript", "Next.js", "Tailwind", "Node.js",
@@ -7,87 +8,59 @@ const skills = [
   "Supabase", "PostgreSQL", "Framer Motion", "Three.js",
 ];
 
-const journey = [
-  { year: "2025", role: "Founder & Design Engineer", at: "This Studio" },
-  { year: "2022", role: "Lead Product Designer", at: "Series B SaaS" },
-  { year: "2020", role: "Senior Frontend Engineer", at: "Agency, Berlin" },
-  { year: "2017", role: "Designer & Developer", at: "Freelance" },
-];
+const About = () => {
+  const { state } = useStudio();
+  const dev = state.settings.developer;
 
-const About = () => (
-  <>
-    <section className="container-studio pt-20 pb-12">
-      <SectionHeader
-        eyebrow="About"
-        title="A studio built around craft and clarity."
-        description="We're a small, senior team that takes on a handful of projects each quarter. Every engagement gets the attention it deserves."
-      />
-    </section>
+  return (
+    <>
+      <section className="container-studio pt-20 pb-12">
+        <SectionHeader
+          eyebrow="About"
+          title="A studio built around craft and clarity."
+          description="A small, senior team that takes on a handful of projects each quarter."
+        />
+      </section>
 
-    {/* INTRO */}
-    <section className="container-studio py-16 grid lg:grid-cols-3 gap-12">
-      <div className="lg:col-span-2 space-y-5 text-lg text-muted-foreground leading-relaxed">
-        <p className="text-foreground text-2xl font-display">
-          Hi, we're a creative studio working at the edge of design and engineering.
-        </p>
-        <p>
-          We started with one belief: most digital work is either beautiful or functional, rarely both.
-          We exist to close that gap — by combining the discipline of product engineering with the taste of
-          a design studio.
-        </p>
-        <p>
-          We work directly with founders, marketing leads, and product teams. No middle layer, no account
-          managers — just the people doing the work.
-        </p>
-      </div>
-      <div className="surface-card p-8 self-start">
-        <div className="text-xs uppercase tracking-widest text-primary">Mission</div>
-        <p className="mt-3 text-lg">
-          To craft digital experiences that feel inevitable — clear, fast, and quietly delightful.
-        </p>
-      </div>
-    </section>
-
-    {/* SKILLS */}
-    <section className="container-studio py-16">
-      <span className="text-xs uppercase tracking-widest text-primary">Skills & tools</span>
-      <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mt-3 mb-8">
-        Our toolkit
-      </h2>
-      <div className="flex flex-wrap gap-2">
-        {skills.map((s) => (
-          <span
-            key={s}
-            className="px-4 py-2 rounded-full bg-secondary border border-border text-sm hover:border-primary hover:text-primary transition-colors"
-          >
-            {s}
-          </span>
-        ))}
-      </div>
-    </section>
-
-    {/* JOURNEY */}
-    <section className="container-studio py-16">
-      <span className="text-xs uppercase tracking-widest text-primary">Journey</span>
-      <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mt-3 mb-8">
-        Eight years in
-      </h2>
-      <div className="space-y-3">
-        {journey.map((j) => (
-          <div
-            key={j.year}
-            className="surface-card p-6 grid md:grid-cols-[100px_1fr_auto] gap-4 items-center"
-          >
-            <div className="font-display text-2xl text-gradient-brand">{j.year}</div>
-            <div className="font-semibold">{j.role}</div>
-            <div className="text-muted-foreground text-sm">{j.at}</div>
+      {/* PROFILE */}
+      <section className="container-studio py-16 grid lg:grid-cols-3 gap-12">
+        <div className="lg:col-span-2 space-y-5 text-lg text-muted-foreground leading-relaxed">
+          <p className="text-foreground text-2xl font-display">
+            Hi, I'm {dev.name} — {dev.title}.
+          </p>
+          <p>{dev.bio}</p>
+          <div className="flex flex-wrap gap-3 text-sm">
+            <span className="px-3 py-1 rounded-full bg-secondary border border-border">{dev.yearsExperience}+ years experience</span>
+            <span className="px-3 py-1 rounded-full bg-secondary border border-border">📍 {dev.location}</span>
           </div>
-        ))}
-      </div>
-    </section>
+        </div>
+        <div className="surface-card p-8 self-start text-center">
+          {dev.avatarUrl ? (
+            <img src={dev.avatarUrl} alt={dev.name} className="w-28 h-28 rounded-full mx-auto object-cover border border-border" />
+          ) : (
+            <div className="w-28 h-28 rounded-full mx-auto bg-gradient-primary text-primary-foreground grid place-items-center font-display text-4xl font-bold shadow-glow">
+              {dev.name.charAt(0)}
+            </div>
+          )}
+          <div className="mt-4 font-display text-lg font-semibold">{dev.name}</div>
+          <div className="text-sm text-muted-foreground">{dev.title}</div>
+        </div>
+      </section>
 
-    <CTASection title="Like the way we work?" description="Tell us about your project — we'd love to chat." />
-  </>
-);
+      {/* SKILLS */}
+      <section className="container-studio py-16">
+        <span className="text-xs uppercase tracking-widest text-primary">Skills & tools</span>
+        <h2 className="text-3xl md:text-4xl font-display font-bold tracking-tight mt-3 mb-8">Toolkit</h2>
+        <div className="flex flex-wrap gap-2">
+          {skills.map((s) => (
+            <span key={s} className="px-4 py-2 rounded-full bg-secondary border border-border text-sm hover:border-primary hover:text-primary transition-colors">{s}</span>
+          ))}
+        </div>
+      </section>
+
+      <CTASection title="Like the way we work?" description="Tell us about your project — we'd love to chat." />
+    </>
+  );
+};
 
 export default About;
