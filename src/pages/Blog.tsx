@@ -2,14 +2,16 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import SectionHeader from "@/components/SectionHeader";
-import { posts } from "@/data/site";
+import { useStudio } from "@/store/StudioStore";
 import { cn } from "@/lib/utils";
 
 const categories = ["All", "Design", "Engineering", "Branding", "Process"] as const;
 
 const Blog = () => {
+  const { state } = useStudio();
+  const published = state.posts.filter((p) => p.isPublished);
   const [filter, setFilter] = useState<(typeof categories)[number]>("All");
-  const filtered = filter === "All" ? posts : posts.filter((p) => p.category === filter);
+  const filtered = filter === "All" ? published : published.filter((p) => p.category === filter);
 
   return (
     <>
@@ -53,10 +55,7 @@ const Blog = () => {
                 <div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="text-primary uppercase tracking-widest">{p.category}</span>
-                    <span>•</span>
-                    <span>{p.date}</span>
-                    <span>•</span>
-                    <span>{p.readTime}</span>
+                    <span>•</span><span>{p.date}</span><span>•</span><span>{p.readTime}</span>
                   </div>
                   <h2 className="font-display text-2xl md:text-3xl font-semibold mt-3 group-hover:text-primary transition-colors">
                     {p.title}
