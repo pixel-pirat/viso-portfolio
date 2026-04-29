@@ -6,8 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import SectionHeader from "@/components/SectionHeader";
 import { toast } from "@/hooks/use-toast";
+import { useStudio } from "@/store/StudioStore";
 
 const Contact = () => {
+  const { state } = useStudio();
+  const c = state.settings.contact;
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -16,10 +19,7 @@ const Contact = () => {
     setTimeout(() => {
       setSubmitting(false);
       (e.target as HTMLFormElement).reset();
-      toast({
-        title: "Message sent",
-        description: "Thanks — we'll get back within one business day.",
-      });
+      toast({ title: "Message sent", description: "Thanks — we'll get back within one business day." });
     }, 800);
   };
 
@@ -45,24 +45,14 @@ const Contact = () => {
               <Input id="email" name="email" type="email" placeholder="you@company.com" required className="bg-background border-border h-11" />
             </div>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="project">Project type</Label>
             <Input id="project" name="project" placeholder="Web app, mobile, branding..." className="bg-background border-border h-11" />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="message">Tell us more</Label>
-            <Textarea
-              id="message"
-              name="message"
-              placeholder="Goals, timeline, budget range — whatever helps us understand."
-              required
-              rows={6}
-              className="bg-background border-border resize-none"
-            />
+            <Textarea id="message" name="message" placeholder="Goals, timeline, budget range — whatever helps us understand." required rows={6} className="bg-background border-border resize-none" />
           </div>
-
           <Button type="submit" variant="hero" size="lg" disabled={submitting} className="w-full md:w-auto">
             {submitting ? "Sending..." : (<>Send message <Send size={16} /></>)}
           </Button>
@@ -74,24 +64,25 @@ const Contact = () => {
               <Mail size={18} />
             </div>
             <h3 className="font-display font-semibold mt-4">Email</h3>
-            <p className="text-sm text-muted-foreground mt-1">hello@studio.com</p>
+            <a href={`mailto:${c.email}`} className="text-sm text-muted-foreground mt-1 hover:text-primary">{c.email}</a>
           </div>
           <div className="surface-card p-6">
             <div className="grid h-10 w-10 place-items-center rounded-lg bg-secondary border border-border text-primary">
               <MapPin size={18} />
             </div>
             <h3 className="font-display font-semibold mt-4">Based in</h3>
-            <p className="text-sm text-muted-foreground mt-1">Remote — working worldwide</p>
+            <p className="text-sm text-muted-foreground mt-1">{c.location}</p>
           </div>
           <div className="surface-card p-6">
             <h3 className="font-display font-semibold">Follow along</h3>
-            <div className="flex gap-2 mt-3">
-              {["Twitter", "Instagram", "LinkedIn"].map((n) => (
-                <a
-                  key={n}
-                  href="#"
-                  className="px-3 py-1.5 rounded-full border border-border text-xs text-muted-foreground hover:text-primary hover:border-primary transition-colors"
-                >
+            <div className="flex gap-2 mt-3 flex-wrap">
+              {([
+                ["Twitter", c.socials.twitter],
+                ["Instagram", c.socials.instagram],
+                ["LinkedIn", c.socials.linkedin],
+                ["GitHub", c.socials.github],
+              ] as const).filter(([, url]) => !!url).map(([n, url]) => (
+                <a key={n} href={url} target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-full border border-border text-xs text-muted-foreground hover:text-primary hover:border-primary transition-colors">
                   {n}
                 </a>
               ))}
