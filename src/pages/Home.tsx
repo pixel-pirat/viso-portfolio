@@ -6,7 +6,7 @@ import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
 import { useStudio } from "@/store/StudioStore";
 import { getIcon } from "@/lib/icons";
-import heroTech from "@/assets/hero-tech.jpg";
+import heroTech from "@/assets/hero-3d-studio.jpg";
 
 const timeAgo = (iso: string) => {
   const diff = Date.now() - +new Date(iso);
@@ -97,14 +97,14 @@ const Home = () => {
           </div>
 
           <div className="relative animate-scale-in">
-            <div className="absolute -inset-8 bg-gradient-primary opacity-20 blur-3xl rounded-full" />
-            <div className="relative rounded-3xl overflow-hidden border border-border shadow-elegant animate-float">
+            <div className="absolute -inset-12 bg-gradient-primary opacity-15 blur-3xl rounded-full" />
+            <div className="relative animate-float">
               <img
                 src={heroTech}
-                alt="Floating tech UI elements representing modern digital craftsmanship"
+                alt="Floating 3D laptop with orbiting glass UI cards, code snippets and analytics — modern digital studio scene"
                 width={1536}
-                height={1280}
-                className="w-full h-auto"
+                height={1024}
+                className="w-full h-auto drop-shadow-[0_30px_60px_hsl(var(--primary)/0.18)]"
               />
             </div>
           </div>
