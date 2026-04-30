@@ -3,8 +3,9 @@ import { useStudio } from "@/store/StudioStore";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Trash2, Paperclip, Download } from "lucide-react";
 import type { Booking } from "@/store/types";
+import { downloadDataUrl, formatBytes } from "@/lib/uploads";
 
 const STATUSES: Booking["status"][] = ["new", "in_review", "replied", "won", "lost"];
 
@@ -62,6 +63,32 @@ const BookingsAdmin = () => {
                     {svc?.title ?? "Unknown service"} — <span className="text-foreground">{tier?.name ?? "Unknown tier"}</span> ({tier?.price ?? "—"})
                   </div>
                   <p className="text-sm mt-3 max-w-2xl">{b.message}</p>
+
+                  {b.attachments && b.attachments.length > 0 && (
+                    <div className="mt-4 space-y-1.5 max-w-2xl">
+                      <div className="text-[11px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                        <Paperclip size={11} /> Attachments ({b.attachments.length})
+                      </div>
+                      <ul className="space-y-1.5">
+                        {b.attachments.map((a) => (
+                          <li key={a.id} className="flex items-center justify-between gap-2 text-sm rounded-md border border-border bg-background px-2.5 py-1.5">
+                            <span className="truncate">{a.name}</span>
+                            <span className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs text-muted-foreground">{formatBytes(a.size)}</span>
+                              <button
+                                type="button"
+                                onClick={() => downloadDataUrl(a.dataUrl, a.name)}
+                                className="text-muted-foreground hover:text-foreground"
+                                aria-label={`Download ${a.name}`}
+                              >
+                                <Download size={14} />
+                              </button>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2">
                   <Select value={b.status} onValueChange={(v) => setStatus(b.id, v as Booking["status"])}>

@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Pencil, Plus, Trash2, Star } from "lucide-react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useRef, useState } from "react";
+import { Pencil, Plus, Trash2, Star, Upload, Image as ImageIcon } from "lucide-react";
+import { useStudio } from "@/store/StudioStore";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import type { Project } from "@/store/types";
+import { readImageDownscaled } from "@/lib/uploads";
 
 const empty = (): Project => ({
   slug: "", title: "", category: "Web", excerpt: "", problem: "", solution: "",
@@ -72,6 +73,15 @@ const ProjectsAdmin = () => {
         <div className="grid md:grid-cols-2 gap-4">
           {state.projects.map((p) => (
             <div key={p.slug} className="surface-card p-5">
+              <div className="aspect-[16/9] mb-4 rounded-lg overflow-hidden border border-border bg-secondary">
+                {p.coverImage ? (
+                  <img src={p.coverImage} alt={p.title} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full grid place-items-center text-muted-foreground">
+                    <ImageIcon size={28} />
+                  </div>
+                )}
+              </div>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-[11px] uppercase tracking-widest text-primary">{p.category}</div>
@@ -100,6 +110,10 @@ const ProjectsAdmin = () => {
           <DialogHeader><DialogTitle>{editing && state.projects.some(p => p.slug === editing.slug) ? "Edit" : "New"} project</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-4">
+              <CoverImageField
+                value={editing.coverImage}
+                onChange={(v) => setEditing({ ...editing, coverImage: v })}
+              />
               <div className="grid md:grid-cols-2 gap-4">
                 <div><Label>Title</Label><Input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></div>
                 <div><Label>Slug (auto if blank)</Label><Input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} placeholder="my-project" /></div>
@@ -150,6 +164,45 @@ const ProjectsAdmin = () => {
         </DialogContent>
       </Dialog>
     </>
+  );
+};
+
+const CoverImageField = ({
+  value, onChange,
+}: { value?: string; onChange: (v: string | undefined) => void }) => {
+  const ref = useRef<HTMLInputElement>(null);
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const dataUrl = await readImageDownscaled(file, 1280, 0.82);
+      onChange(dataUrl);
+      toast({ title: "Cover image updated" });
+    } catch (e) {
+      toast({ title: "Upload failed", description: (e as Error).message, variant: "destructive" });
+    }
+  };
+  return (
+    <div className="space-y-2">
+      <Label>Cover image</Label>
+      <div className="aspect-[16/9] w-full rounded-lg overflow-hidden border border-border bg-secondary grid place-items-center">
+        {value
+          ? <img src={value} alt="Cover preview" className="h-full w-full object-cover" />
+          : <ImageIcon className="text-muted-foreground" size={32} />}
+      </div>
+      <div className="flex gap-2">
+        <input ref={ref} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ""; }} />
+        <Button type="button" size="sm" variant="outline" onClick={() => ref.current?.click()}>
+          <Upload size={14} /> {value ? "Replace image" : "Upload image"}
+        </Button>
+        {value && (
+          <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => onChange(undefined)}>
+            <Trash2 size={14} /> Remove
+          </Button>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground">Resized to max 1280px and stored locally (~150–500KB typical).</p>
+    </div>
   );
 };
 

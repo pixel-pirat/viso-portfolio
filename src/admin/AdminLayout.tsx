@@ -7,6 +7,7 @@ import { useAdminAuth } from "./AdminAuth";
 import AdminLogin from "./AdminLogin";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useStudio } from "@/store/StudioStore";
 
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -21,10 +22,15 @@ const items = [
 ];
 
 const AdminLayout = () => {
-  const { isAuthed, logout } = useAdminAuth();
+  const { isAuthed, logout, session } = useAdminAuth();
+  const { state } = useStudio();
   const navigate = useNavigate();
 
   if (!isAuthed) return <AdminLogin />;
+
+  const dev = state.settings.developer;
+  const displayName = session?.name || dev.name;
+  const initials = displayName.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A";
 
   return (
     <div className="min-h-screen bg-background grid lg:grid-cols-[260px_1fr]">
@@ -59,6 +65,20 @@ const AdminLayout = () => {
         </nav>
 
         <div className="p-3 border-t border-border space-y-2">
+          <NavLink
+            to="/admin/settings"
+            className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-secondary/60 transition-colors"
+          >
+            <span className="h-9 w-9 rounded-full overflow-hidden border border-border bg-secondary grid place-items-center shrink-0">
+              {dev.avatarUrl
+                ? <img src={dev.avatarUrl} alt="" className="h-full w-full object-cover" />
+                : <span className="text-xs font-bold text-muted-foreground">{initials}</span>}
+            </span>
+            <div className="min-w-0">
+              <div className="text-sm font-medium truncate">{displayName}</div>
+              <div className="text-[11px] text-muted-foreground truncate capitalize">{session?.role ?? "admin"}</div>
+            </div>
+          </NavLink>
           <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate("/")}>
             <ExternalLink size={14} /> View site
           </Button>
