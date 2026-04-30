@@ -110,6 +110,10 @@ const ProjectsAdmin = () => {
           <DialogHeader><DialogTitle>{editing && state.projects.some(p => p.slug === editing.slug) ? "Edit" : "New"} project</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-4">
+              <CoverImageField
+                value={editing.coverImage}
+                onChange={(v) => setEditing({ ...editing, coverImage: v })}
+              />
               <div className="grid md:grid-cols-2 gap-4">
                 <div><Label>Title</Label><Input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></div>
                 <div><Label>Slug (auto if blank)</Label><Input value={editing.slug} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} placeholder="my-project" /></div>
