@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Pencil, Plus, Trash2, Star } from "lucide-react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useRef, useState } from "react";
+import { Pencil, Plus, Trash2, Star, Upload, Image as ImageIcon } from "lucide-react";
+import { useStudio } from "@/store/StudioStore";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import type { Project } from "@/store/types";
+import { readImageDownscaled } from "@/lib/uploads";
 
 const empty = (): Project => ({
   slug: "", title: "", category: "Web", excerpt: "", problem: "", solution: "",
