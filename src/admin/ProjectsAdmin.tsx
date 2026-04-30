@@ -167,4 +167,43 @@ const ProjectsAdmin = () => {
   );
 };
 
+const CoverImageField = ({
+  value, onChange,
+}: { value?: string; onChange: (v: string | undefined) => void }) => {
+  const ref = useRef<HTMLInputElement>(null);
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const dataUrl = await readImageDownscaled(file, 1280, 0.82);
+      onChange(dataUrl);
+      toast({ title: "Cover image updated" });
+    } catch (e) {
+      toast({ title: "Upload failed", description: (e as Error).message, variant: "destructive" });
+    }
+  };
+  return (
+    <div className="space-y-2">
+      <Label>Cover image</Label>
+      <div className="aspect-[16/9] w-full rounded-lg overflow-hidden border border-border bg-secondary grid place-items-center">
+        {value
+          ? <img src={value} alt="Cover preview" className="h-full w-full object-cover" />
+          : <ImageIcon className="text-muted-foreground" size={32} />}
+      </div>
+      <div className="flex gap-2">
+        <input ref={ref} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ""; }} />
+        <Button type="button" size="sm" variant="outline" onClick={() => ref.current?.click()}>
+          <Upload size={14} /> {value ? "Replace image" : "Upload image"}
+        </Button>
+        {value && (
+          <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => onChange(undefined)}>
+            <Trash2 size={14} /> Remove
+          </Button>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground">Resized to max 1280px and stored locally (~150–500KB typical).</p>
+    </div>
+  );
+};
+
 export default ProjectsAdmin;
