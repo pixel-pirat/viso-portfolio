@@ -73,6 +73,15 @@ const ProjectsAdmin = () => {
         <div className="grid md:grid-cols-2 gap-4">
           {state.projects.map((p) => (
             <div key={p.slug} className="surface-card p-5">
+              <div className="aspect-[16/9] mb-4 rounded-lg overflow-hidden border border-border bg-secondary">
+                {p.coverImage ? (
+                  <img src={p.coverImage} alt={p.title} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full grid place-items-center text-muted-foreground">
+                    <ImageIcon size={28} />
+                  </div>
+                )}
+              </div>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-[11px] uppercase tracking-widest text-primary">{p.category}</div>
