@@ -29,6 +29,7 @@ export type Project = {
   results: { metric: string; label: string }[];
   isFeatured?: boolean;
   publishedAt: string; // ISO
+  coverImage?: string; // base64 data URL or remote URL
 };
 
 export type BlogPost = {
@@ -58,6 +59,14 @@ export type ActivityItem = {
   timestamp: string; // ISO
 };
 
+export type Attachment = {
+  id: string;
+  name: string;
+  type: string;     // mime
+  size: number;     // bytes
+  dataUrl: string;  // base64 data URL (mock storage)
+};
+
 export type Booking = {
   id: string;
   name: string;
@@ -67,6 +76,7 @@ export type Booking = {
   message: string;
   status: "new" | "in_review" | "replied" | "won" | "lost";
   createdAt: string;
+  attachments?: Attachment[];
 };
 
 export type AdminUser = {
