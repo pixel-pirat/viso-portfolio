@@ -53,9 +53,13 @@ const Projects = () => {
             >
               <div className="aspect-[4/3] mb-5 rounded-xl bg-gradient-to-br from-primary/20 via-secondary to-accent-purple/20 grid place-items-center relative overflow-hidden">
                 <div className="absolute inset-0 grid-bg opacity-50" />
-                <span className="relative font-display text-5xl font-bold text-gradient">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+                {p.coverImage ? (
+                  <img src={p.coverImage} alt={p.title} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                ) : (
+                  <span className="relative font-display text-5xl font-bold text-gradient">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                )}
               </div>
               <div className="flex items-start justify-between gap-3">
                 <div>
