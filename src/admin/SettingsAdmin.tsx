@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useStudio } from "@/store/StudioStore";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Upload, Trash2 } from "lucide-react";
+import { readImageDownscaled, AVATAR_MAX_DIM } from "@/lib/uploads";
 
 const SettingsAdmin = () => {
   const { state, setState, reset } = useStudio();
@@ -56,18 +58,73 @@ const SettingsAdmin = () => {
 
         <section className="surface-card p-6 space-y-4 lg:col-span-2">
           <h2 className="font-display text-lg font-semibold">Developer profile</h2>
+
+          <AvatarField
+            value={s.developer.avatarUrl}
+            name={s.developer.name}
+            onChange={(url) => onDev({ avatarUrl: url })}
+          />
+
           <div className="grid md:grid-cols-2 gap-3">
             <div><Label>Name</Label><Input value={s.developer.name} onChange={(e) => onDev({ name: e.target.value })} /></div>
             <div><Label>Title</Label><Input value={s.developer.title} onChange={(e) => onDev({ title: e.target.value })} /></div>
             <div><Label>Years experience</Label><Input type="number" value={s.developer.yearsExperience} onChange={(e) => onDev({ yearsExperience: parseInt(e.target.value || "0") })} /></div>
             <div><Label>Location</Label><Input value={s.developer.location} onChange={(e) => onDev({ location: e.target.value })} /></div>
-            <div className="md:col-span-2"><Label>Avatar URL</Label><Input value={s.developer.avatarUrl} onChange={(e) => onDev({ avatarUrl: e.target.value })} placeholder="https://..." /></div>
             <div className="md:col-span-2"><Label>Bio</Label><Textarea rows={4} value={s.developer.bio} onChange={(e) => onDev({ bio: e.target.value })} /></div>
           </div>
           <p className="text-xs text-muted-foreground">Changes save automatically to local storage.</p>
         </section>
       </div>
     </>
+  );
+};
+
+const AvatarField = ({
+  value, name, onChange,
+}: { value: string; name: string; onChange: (v: string) => void }) => {
+  const ref = useRef<HTMLInputElement>(null);
+  const initials = name.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A";
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const dataUrl = await readImageDownscaled(file, AVATAR_MAX_DIM, 0.85);
+      onChange(dataUrl);
+      toast({ title: "Avatar updated" });
+    } catch (e) {
+      toast({ title: "Upload failed", description: (e as Error).message, variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="h-20 w-20 rounded-full overflow-hidden border border-border bg-secondary grid place-items-center shrink-0">
+        {value
+          ? <img src={value} alt={`${name} avatar`} className="h-full w-full object-cover" />
+          : <span className="font-display font-bold text-2xl text-muted-foreground">{initials}</span>}
+      </div>
+      <div className="flex-1 space-y-2">
+        <Label>Profile photo</Label>
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={ref}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ""; }}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={() => ref.current?.click()}>
+            <Upload size={14} /> Upload image
+          </Button>
+          {value && (
+            <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => onChange("")}>
+              <Trash2 size={14} /> Remove
+            </Button>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground">Resized to {AVATAR_MAX_DIM}px and stored locally.</p>
+      </div>
+    </div>
   );
 };
 
