@@ -6,7 +6,7 @@ import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
 import { useStudio } from "@/store/StudioStore";
 import { getIcon } from "@/lib/icons";
-import heroTech from "@/assets/hero-tech.jpg";
+import heroTech from "@/assets/hero-3d-studio.jpg";
 
 const timeAgo = (iso: string) => {
   const diff = Date.now() - +new Date(iso);
