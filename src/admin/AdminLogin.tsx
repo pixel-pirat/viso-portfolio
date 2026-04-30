@@ -32,14 +32,14 @@ const AdminLogin = () => {
   const onLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const r = login(email, password);
-    if (!r.ok) toast({ title: "Sign-in failed", description: r.error, variant: "destructive" });
+    if (!r.ok) toast({ title: "Sign-in failed", description: (r as { error: string }).error, variant: "destructive" });
   };
 
   const onSignup = (e: React.FormEvent) => {
     e.preventDefault();
     // First account becomes admin so the user can actually manage things
     const r = signup({ name: sName, email: sEmail, password: sPw, role: "admin" });
-    if (!r.ok) toast({ title: "Signup failed", description: r.error, variant: "destructive" });
+    if (!r.ok) toast({ title: "Signup failed", description: (r as { error: string }).error, variant: "destructive" });
     else toast({ title: "Account created", description: "You're signed in as admin." });
   };
 
