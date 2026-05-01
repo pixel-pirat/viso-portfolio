@@ -195,4 +195,6 @@ export type StudioState = {
   bookings: Booking[];
   users: AdminUser[];
   settings: Settings;
+  proposals: Proposal[];
+  clientProjects: ClientProject[];
 };
