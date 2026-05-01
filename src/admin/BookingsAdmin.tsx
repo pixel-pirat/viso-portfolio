@@ -3,9 +3,10 @@ import { useStudio } from "@/store/StudioStore";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Paperclip, Download } from "lucide-react";
+import { Trash2, Paperclip, Download, FileText } from "lucide-react";
 import type { Booking } from "@/store/types";
 import { downloadDataUrl, formatBytes } from "@/lib/uploads";
+import CreateProposalDialog from "./CreateProposalDialog";
 
 const STATUSES: Booking["status"][] = ["new", "in_review", "replied", "won", "lost"];
 
@@ -20,6 +21,7 @@ const statusColor: Record<Booking["status"], string> = {
 const BookingsAdmin = () => {
   const { state, setState } = useStudio();
   const [filter, setFilter] = useState<Booking["status"] | "all">("all");
+  const [convert, setConvert] = useState<Booking | null>(null);
 
   const bookings = filter === "all" ? state.bookings : state.bookings.filter((b) => b.status === filter);
 
