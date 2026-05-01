@@ -27,6 +27,13 @@ import BookingsAdmin from "./admin/BookingsAdmin";
 import UsersAdmin from "./admin/UsersAdmin";
 import AnalyticsAdmin from "./admin/AnalyticsAdmin";
 import SettingsAdmin from "./admin/SettingsAdmin";
+import ProposalsAdmin from "./admin/ProposalsAdmin";
+import ClientProjectsAdmin from "./admin/ClientProjectsAdmin";
+import PortalLayout from "./portal/PortalLayout";
+import PortalDashboard from "./portal/PortalDashboard";
+import PortalProjects from "./portal/PortalProjects";
+import PortalProjectDetail from "./portal/PortalProjectDetail";
+import PortalProposals from "./portal/PortalProposals";
 
 const queryClient = new QueryClient();
 
@@ -59,9 +66,18 @@ const App = () => (
                   <Route path="blog" element={<BlogAdmin />} />
                   <Route path="hero" element={<HeroAdmin />} />
                   <Route path="bookings" element={<BookingsAdmin />} />
+                  <Route path="proposals" element={<ProposalsAdmin />} />
+                  <Route path="client-projects" element={<ClientProjectsAdmin />} />
                   <Route path="users" element={<UsersAdmin />} />
                   <Route path="analytics" element={<AnalyticsAdmin />} />
                   <Route path="settings" element={<SettingsAdmin />} />
+                </Route>
+
+                <Route path="/portal" element={<PortalLayout />}>
+                  <Route index element={<PortalDashboard />} />
+                  <Route path="projects" element={<PortalProjects />} />
+                  <Route path="projects/:id" element={<PortalProjectDetail />} />
+                  <Route path="proposals" element={<PortalProposals />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
