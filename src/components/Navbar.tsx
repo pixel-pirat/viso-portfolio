@@ -54,6 +54,9 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
+          <Button asChild variant="outline" size="sm">
+            <Link to="/portal">Client portal</Link>
+          </Button>
           <Button asChild variant="hero" size="sm">
             <Link to="/contact">Start a Project</Link>
           </Button>
