@@ -22,11 +22,25 @@ const items = [
 ];
 
 const AdminLayout = () => {
-  const { isAuthed, logout, session } = useAdminAuth();
+  const { isAuthed, isAdmin, logout, session } = useAdminAuth();
   const { state } = useStudio();
   const navigate = useNavigate();
 
   if (!isAuthed) return <AdminLogin />;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen grid place-items-center p-6 bg-background">
+        <div className="surface-card p-8 max-w-sm text-center space-y-4">
+          <h1 className="font-display text-xl font-bold">Client account detected</h1>
+          <p className="text-sm text-muted-foreground">The admin console is for studio staff. Head to your client portal to see your projects.</p>
+          <div className="flex gap-2 justify-center">
+            <Button variant="hero" onClick={() => navigate("/portal")}>Open client portal</Button>
+            <Button variant="ghost" onClick={logout}>Sign out</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const dev = state.settings.developer;
   const displayName = session?.name || dev.name;
