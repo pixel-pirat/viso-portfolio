@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { useStudio, uid } from "@/store/StudioStore";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
@@ -97,7 +97,7 @@ const ProjectDetail = ({ project, onUpdate, onRemove }: {
   const [msMode, setMsMode] = useState<{ open: boolean; ms?: Milestone }>({ open: false });
   const [invMode, setInvMode] = useState<{ open: boolean; inv?: Invoice }>({ open: false });
   const [msg, setMsg] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
+  
 
   const sendMessage = () => {
     const body = msg.trim();
