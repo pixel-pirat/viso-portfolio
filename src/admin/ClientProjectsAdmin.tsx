@@ -196,7 +196,6 @@ const ProjectDetail = ({ project, onUpdate, onRemove }: {
 
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <input
-                  ref={fileRef}
                   type="file" multiple className="hidden"
                   id={`ms-files-${m.id}`}
                   onChange={(e) => { onAttachDeliverable(m.id, e.target.files); e.target.value = ""; }}
