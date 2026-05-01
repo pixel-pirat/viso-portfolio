@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Briefcase, Wrench, BookOpen, Calendar, Users,
-  BarChart3, Settings as SettingsIcon, Sparkles, LogOut, ExternalLink
+  BarChart3, Settings as SettingsIcon, Sparkles, LogOut, ExternalLink,
+  FileText, FolderKanban,
 } from "lucide-react";
 import { useAdminAuth } from "./AdminAuth";
 import AdminLogin from "./AdminLogin";
@@ -11,22 +12,38 @@ import { useStudio } from "@/store/StudioStore";
 
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/projects", label: "Projects", icon: Briefcase },
+  { to: "/admin/projects", label: "Portfolio", icon: Briefcase },
   { to: "/admin/services", label: "Services & Tiers", icon: Wrench },
   { to: "/admin/blog", label: "Blog", icon: BookOpen },
   { to: "/admin/hero", label: "Hero Feed", icon: Sparkles },
   { to: "/admin/bookings", label: "Bookings", icon: Calendar },
+  { to: "/admin/proposals", label: "Proposals", icon: FileText },
+  { to: "/admin/client-projects", label: "Client Projects", icon: FolderKanban },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 const AdminLayout = () => {
-  const { isAuthed, logout, session } = useAdminAuth();
+  const { isAuthed, isAdmin, logout, session } = useAdminAuth();
   const { state } = useStudio();
   const navigate = useNavigate();
 
   if (!isAuthed) return <AdminLogin />;
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen grid place-items-center p-6 bg-background">
+        <div className="surface-card p-8 max-w-sm text-center space-y-4">
+          <h1 className="font-display text-xl font-bold">Client account detected</h1>
+          <p className="text-sm text-muted-foreground">The admin console is for studio staff. Head to your client portal to see your projects.</p>
+          <div className="flex gap-2 justify-center">
+            <Button variant="hero" onClick={() => navigate("/portal")}>Open client portal</Button>
+            <Button variant="ghost" onClick={logout}>Sign out</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const dev = state.settings.developer;
   const displayName = session?.name || dev.name;

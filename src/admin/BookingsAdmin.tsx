@@ -3,9 +3,10 @@ import { useStudio } from "@/store/StudioStore";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Paperclip, Download } from "lucide-react";
+import { Trash2, Paperclip, Download, FileText } from "lucide-react";
 import type { Booking } from "@/store/types";
 import { downloadDataUrl, formatBytes } from "@/lib/uploads";
+import CreateProposalDialog from "./CreateProposalDialog";
 
 const STATUSES: Booking["status"][] = ["new", "in_review", "replied", "won", "lost"];
 
@@ -20,6 +21,7 @@ const statusColor: Record<Booking["status"], string> = {
 const BookingsAdmin = () => {
   const { state, setState } = useStudio();
   const [filter, setFilter] = useState<Booking["status"] | "all">("all");
+  const [convert, setConvert] = useState<Booking | null>(null);
 
   const bookings = filter === "all" ? state.bookings : state.bookings.filter((b) => b.status === filter);
 
@@ -97,6 +99,9 @@ const BookingsAdmin = () => {
                       {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  <Button size="sm" variant="outline" onClick={() => setConvert(b)}>
+                    <FileText size={14} /> Convert to proposal
+                  </Button>
                   <Button size="sm" variant="ghost" className="text-destructive justify-start" onClick={() => remove(b.id)}>
                     <Trash2 size={14} /> Delete
                   </Button>
@@ -106,6 +111,12 @@ const BookingsAdmin = () => {
           );
         })}
       </div>
+
+      <CreateProposalDialog
+        open={!!convert}
+        onOpenChange={(v) => { if (!v) setConvert(null); }}
+        booking={convert ?? undefined}
+      />
     </>
   );
 };

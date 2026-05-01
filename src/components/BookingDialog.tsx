@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStudio, uid } from "@/store/StudioStore";
+import { useAdminAuth } from "@/admin/AdminAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,12 +20,21 @@ type Props = {
 
 const BookingDialog = ({ service, tier, open, onOpenChange }: Props) => {
   const { setState } = useStudio();
+  const { session } = useAdminAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Prefill from logged-in client account
+  useEffect(() => {
+    if (open && session?.role === "client") {
+      setName((n) => n || session.name);
+      setEmail((e) => e || session.email);
+    }
+  }, [open, session]);
 
   const reset = () => {
     setName(""); setEmail(""); setMessage(""); setAttachments([]);
@@ -66,6 +76,7 @@ const BookingDialog = ({ service, tier, open, onOpenChange }: Props) => {
             status: "new",
             createdAt: new Date().toISOString(),
             attachments,
+            clientId: session?.role === "client" ? session.id : undefined,
           },
           ...s.bookings,
         ],

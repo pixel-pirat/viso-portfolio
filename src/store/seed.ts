@@ -155,6 +155,8 @@ export const seedState: StudioState = {
     { id: "u1", name: "Alex Morgan", email: "alex@studio.com", role: "admin", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString() },
     { id: "u2", name: "Jamie Rivera", email: "jamie@studio.com", role: "editor", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString() },
   ],
+  proposals: [],
+  clientProjects: [],
   settings: {
     contact: {
       email: "hello@studio.com",
