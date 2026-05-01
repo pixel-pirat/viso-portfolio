@@ -1,7 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Briefcase, Wrench, BookOpen, Calendar, Users,
-  BarChart3, Settings as SettingsIcon, Sparkles, LogOut, ExternalLink
+  BarChart3, Settings as SettingsIcon, Sparkles, LogOut, ExternalLink,
+  FileText, FolderKanban,
 } from "lucide-react";
 import { useAdminAuth } from "./AdminAuth";
 import AdminLogin from "./AdminLogin";
@@ -11,11 +12,13 @@ import { useStudio } from "@/store/StudioStore";
 
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/projects", label: "Projects", icon: Briefcase },
+  { to: "/admin/projects", label: "Portfolio", icon: Briefcase },
   { to: "/admin/services", label: "Services & Tiers", icon: Wrench },
   { to: "/admin/blog", label: "Blog", icon: BookOpen },
   { to: "/admin/hero", label: "Hero Feed", icon: Sparkles },
   { to: "/admin/bookings", label: "Bookings", icon: Calendar },
+  { to: "/admin/proposals", label: "Proposals", icon: FileText },
+  { to: "/admin/client-projects", label: "Client Projects", icon: FolderKanban },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
