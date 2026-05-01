@@ -37,10 +37,11 @@ const AdminLogin = () => {
 
   const onSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    // First account becomes admin so the user can actually manage things
-    const r = signup({ name: sName, email: sEmail, password: sPw, role: "admin" });
+    // First account becomes admin so the user can actually manage things; subsequent ones are clients.
+    const role = JSON.parse(localStorage.getItem("studio:admin:accounts") || "[]").length === 0 ? "admin" : "client";
+    const r = signup({ name: sName, email: sEmail, password: sPw, role });
     if (!r.ok) toast({ title: "Signup failed", description: (r as { error: string }).error, variant: "destructive" });
-    else toast({ title: "Account created", description: "You're signed in as admin." });
+    else toast({ title: "Account created", description: `You're signed in as ${role}.` });
   };
 
   return (
