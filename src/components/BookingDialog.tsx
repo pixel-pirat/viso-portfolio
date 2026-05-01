@@ -76,6 +76,7 @@ const BookingDialog = ({ service, tier, open, onOpenChange }: Props) => {
             status: "new",
             createdAt: new Date().toISOString(),
             attachments,
+            clientId: session?.role === "client" ? session.id : undefined,
           },
           ...s.bookings,
         ],
