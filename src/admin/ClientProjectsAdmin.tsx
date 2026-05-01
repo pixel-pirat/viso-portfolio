@@ -16,7 +16,7 @@ import type {
 import {
   STAGES, stageLabel, stageColor, milestoneProgress,
 } from "@/lib/lifecycle";
-import { fileToAttachment, formatBytes, downloadDataUrl } from "@/lib/uploads";
+import { fileToAttachment, downloadDataUrl } from "@/lib/uploads";
 import { toast } from "@/hooks/use-toast";
 
 const MS_STATUSES: MilestoneStatus[] = ["pending", "in_progress", "review", "done"];
