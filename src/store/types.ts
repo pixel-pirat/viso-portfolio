@@ -204,6 +204,42 @@ export type Settings = {
   };
 };
 
+export type AppointmentStatus = "pending" | "confirmed" | "declined" | "completed" | "cancelled";
+
+export type Appointment = {
+  id: string;
+  clientId?: string;
+  clientName: string;
+  clientEmail: string;
+  serviceSlug?: string;
+  date: string;            // ISO date (YYYY-MM-DD)
+  time: string;            // HH:mm
+  durationMin: number;
+  notes?: string;
+  status: AppointmentStatus;
+  createdAt: string;
+};
+
+export type NotificationKind =
+  | "message"
+  | "proposal"
+  | "invoice"
+  | "project_update"
+  | "appointment"
+  | "reminder";
+
+export type NotificationItem = {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body?: string;
+  href?: string;
+  /** Account id of the recipient. "admin" = any admin. */
+  audience: "admin" | string;
+  createdAt: string;
+  read: boolean;
+};
+
 export type StudioState = {
   services: Service[];
   projects: Project[];
@@ -214,4 +250,6 @@ export type StudioState = {
   settings: Settings;
   proposals: Proposal[];
   clientProjects: ClientProject[];
+  appointments: Appointment[];
+  notifications: NotificationItem[];
 };
