@@ -4,7 +4,7 @@ import { useStudio, uid } from "@/store/StudioStore";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, Download, FileText, Paperclip, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Send, Download, FileText, Paperclip, CheckCircle2, FileDown } from "lucide-react";
 import { stageColor, stageLabel, milestoneProgress, STAGES } from "@/lib/lifecycle";
 import { downloadDataUrl, fileToAttachment } from "@/lib/uploads";
 import { toast } from "@/hooks/use-toast";
@@ -178,8 +178,11 @@ const PortalProjectDetail = () => {
                       {inv.paidAt && ` · paid ${new Date(inv.paidAt).toLocaleDateString()}`}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold">{inv.amount}</span>
+                    <Button size="sm" variant="ghost" onClick={() => exportInvoicePdf(inv, project, brand)}>
+                      <FileDown size={14} /> PDF
+                    </Button>
                     {inv.status === "paid" ? (
                       <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500 text-white">paid</span>
                     ) : (
