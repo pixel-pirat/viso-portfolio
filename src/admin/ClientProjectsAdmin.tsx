@@ -77,6 +77,8 @@ const ClientProjectsAdmin = () => {
           {active ? (
             <ProjectDetail
               project={active}
+              brand={state.settings.brand}
+              brandEmail={state.settings.contact.email}
               onUpdate={(fn) => updateProject(active.id, fn)}
               onRemove={() => removeProject(active.id)}
             />
@@ -91,8 +93,10 @@ const ClientProjectsAdmin = () => {
 
 /* ============================================================== */
 
-const ProjectDetail = ({ project, onUpdate, onRemove }: {
+const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
   project: ClientProject;
+  brand: { studioName: string; tagline: string };
+  brandEmail: string;
   onUpdate: (fn: (p: ClientProject) => ClientProject) => void;
   onRemove: () => void;
 }) => {
@@ -111,8 +115,33 @@ const ProjectDetail = ({ project, onUpdate, onRemove }: {
         authorRole: "admin", body, createdAt: new Date().toISOString(),
       }],
     }));
+    realtime.publish({
+      kind: "message",
+      title: `New message from Studio`,
+      body,
+      audience: project.clientId,
+      href: `/portal/projects/${project.id}`,
+    });
     setMsg("");
   };
+
+  const sendReminder = (inv: Invoice) => {
+    const reminder = { id: uid(), sentAt: new Date().toISOString(), channel: "manual" as const };
+    onUpdate((p) => ({
+      ...p,
+      invoices: p.invoices.map((i) => i.id === inv.id ? { ...i, reminders: [...(i.reminders ?? []), reminder] } : i),
+    }));
+    realtime.publish({
+      kind: "reminder",
+      title: `Payment reminder for ${inv.number}`,
+      body: `${inv.amount} — ${inv.description}`,
+      audience: project.clientId,
+      href: `/portal/projects/${project.id}`,
+    });
+    toast({ title: "Reminder sent" });
+  };
+
+  const brandPayload = { studioName: brand.studioName, tagline: brand.tagline, email: brandEmail };
 
   const onAttachDeliverable = async (msId: string, files: FileList | null) => {
     if (!files?.length) return;
