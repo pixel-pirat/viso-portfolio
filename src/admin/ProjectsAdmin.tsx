@@ -151,6 +151,10 @@ const ProjectsAdmin = () => {
                   })}
                 />
               </div>
+              <GalleryField
+                value={editing.gallery ?? []}
+                onChange={(g) => setEditing({ ...editing, gallery: g })}
+              />
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!editing.isFeatured} onChange={(e) => setEditing({ ...editing, isFeatured: e.target.checked })} />
                 Featured on homepage
