@@ -343,10 +343,20 @@ const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
         existing={invMode.inv}
         nextNumber={`INV-${String(project.invoices.length + 1).padStart(3, "0")}`}
         onSave={(data) => {
-          onUpdate((p) => ({
-            ...p,
-            invoices: [...p.invoices, { id: uid(), createdAt: new Date().toISOString(), status: "sent", ...data }],
-          }));
+          const newInv: Invoice = {
+            id: uid(),
+            createdAt: new Date().toISOString(),
+            status: "sent",
+            ...data,
+          };
+          onUpdate((p) => ({ ...p, invoices: [...p.invoices, newInv] }));
+          realtime.publish({
+            kind: "invoice",
+            title: `New invoice ${newInv.number}`,
+            body: `${newInv.amount} — ${newInv.description}`,
+            audience: project.clientId,
+            href: `/portal/projects/${project.id}`,
+          });
           setInvMode({ open: false });
         }}
       />
@@ -389,11 +399,12 @@ const InvoiceDialog = ({ open, onOpenChange, existing, nextNumber, onSave }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   existing?: Invoice;
   nextNumber: string;
-  onSave: (data: { number: string; description: string; amount: string }) => void;
+  onSave: (data: { number: string; description: string; amount: string; dueDate?: string }) => void;
 }) => {
   const [number, setNumber] = useState(existing?.number ?? nextNumber);
   const [description, setDescription] = useState(existing?.description ?? "");
   const [amount, setAmount] = useState(existing?.amount ?? "");
+  const [dueDate, setDueDate] = useState(existing?.dueDate?.slice(0, 10) ?? "");
 
   return (
     <Dialog open={open} onOpenChange={(v) => {
@@ -402,16 +413,22 @@ const InvoiceDialog = ({ open, onOpenChange, existing, nextNumber, onSave }: {
         setNumber(existing?.number ?? nextNumber);
         setDescription(existing?.description ?? "");
         setAmount(existing?.amount ?? "");
+        setDueDate(existing?.dueDate?.slice(0, 10) ?? "");
       }
     }}>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>{existing ? "Edit invoice" : "New invoice"}</DialogTitle></DialogHeader>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (!description.trim() || !amount.trim()) return; onSave({ number, description, amount }); }}>
+        <form className="space-y-3" onSubmit={(e) => {
+          e.preventDefault();
+          if (!description.trim() || !amount.trim()) return;
+          onSave({ number, description, amount, dueDate: dueDate ? new Date(dueDate).toISOString() : undefined });
+        }}>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Number</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} /></div>
             <div><Label>Amount</Label><Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="$2,000" required /></div>
           </div>
           <div><Label>Description</Label><Input value={description} onChange={(e) => setDescription(e.target.value)} required /></div>
+          <div><Label>Due date (optional)</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
           <DialogFooter><Button type="submit" variant="hero">Save</Button></DialogFooter>
         </form>
       </DialogContent>
