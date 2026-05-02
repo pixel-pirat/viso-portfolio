@@ -2,18 +2,33 @@ import { useState } from "react";
 import { useStudio, uid } from "@/store/StudioStore";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Send, CheckCircle2, XCircle, Rocket } from "lucide-react";
+import { Plus, Trash2, Send, CheckCircle2, XCircle, Rocket, FileDown } from "lucide-react";
 import CreateProposalDialog from "./CreateProposalDialog";
 import { proposalStatusColor, defaultMilestones } from "@/lib/lifecycle";
 import type { ClientProject, Proposal } from "@/store/types";
 import { toast } from "@/hooks/use-toast";
+import { realtime } from "@/lib/realtime";
+import { exportProposalPdf } from "@/lib/pdf";
 
 const ProposalsAdmin = () => {
   const { state, setState } = useStudio();
   const [open, setOpen] = useState(false);
 
-  const update = (id: string, patch: Partial<Proposal>) =>
+  const update = (id: string, patch: Partial<Proposal>) => {
     setState((s) => ({ ...s, proposals: s.proposals.map((p) => p.id === id ? { ...p, ...patch } : p) }));
+    if (patch.status === "sent") {
+      const p = state.proposals.find((x) => x.id === id);
+      if (p) {
+        realtime.publish({
+          kind: "proposal",
+          title: "New proposal received",
+          body: p.title,
+          audience: p.clientId,
+          href: "/portal/proposals",
+        });
+      }
+    }
+  };
 
   const remove = (id: string) =>
     setState((s) => ({ ...s, proposals: s.proposals.filter((p) => p.id !== id) }));
