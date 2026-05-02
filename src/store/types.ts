@@ -18,6 +18,13 @@ export type Service = {
   tiers: ServiceTier[];
 };
 
+export type MediaItem = {
+  id: string;
+  kind: "image" | "video";
+  url: string;          // data URL (image) or external URL (video placeholder)
+  caption?: string;
+};
+
 export type Project = {
   slug: string;
   title: string;
@@ -30,6 +37,7 @@ export type Project = {
   isFeatured?: boolean;
   publishedAt: string; // ISO
   coverImage?: string; // base64 data URL or remote URL
+  gallery?: MediaItem[];
 };
 
 export type BlogPost = {
