@@ -174,6 +174,9 @@ const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
                 {STAGES.map((s) => <SelectItem key={s} value={s}>{stageLabel(s)}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button size="sm" variant="outline" onClick={() => exportProjectSummaryPdf(project, brandPayload)}>
+              <FileDown size={14} /> Export PDF
+            </Button>
             <Button size="sm" variant="ghost" className="text-destructive" onClick={onRemove}>
               <Trash2 size={14} />
             </Button>
@@ -259,29 +262,43 @@ const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
         </div>
 
         <ul className="divide-y divide-border">
-          {project.invoices.map((inv) => (
-            <li key={inv.id} className="py-3 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <div className="font-medium text-sm">{inv.number} — {inv.description}</div>
-                <div className="text-xs text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString()}{inv.paidAt && ` · paid ${new Date(inv.paidAt).toLocaleDateString()}`}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{inv.amount}</span>
-                <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                  inv.status === "paid" ? "bg-emerald-500 text-white"
-                  : inv.status === "sent" ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-foreground border border-border"}`}>{inv.status}</span>
-                {inv.status !== "paid" && (
-                  <Button size="sm" variant="ghost" onClick={() => onUpdate((p) => ({
-                    ...p, invoices: p.invoices.map((x) => x.id === inv.id ? { ...x, status: "paid", paidAt: new Date().toISOString() } : x),
-                  }))}><CheckCircle2 size={14} /> Mark paid</Button>
-                )}
-                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onUpdate((p) => ({
-                  ...p, invoices: p.invoices.filter((x) => x.id !== inv.id),
-                }))}><Trash2 size={14} /></Button>
-              </div>
-            </li>
-          ))}
+          {project.invoices.map((inv) => {
+            const overdue = isOverdue(inv);
+            const lastReminder = inv.reminders?.[inv.reminders.length - 1];
+            return (
+              <li key={inv.id} className="py-3 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="font-medium text-sm">{inv.number} — {inv.description}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(inv.createdAt).toLocaleDateString()}
+                    {inv.dueDate && ` · due ${new Date(inv.dueDate).toLocaleDateString()}`}
+                    {inv.paidAt && ` · paid ${new Date(inv.paidAt).toLocaleDateString()}`}
+                    {lastReminder && ` · last reminder ${new Date(lastReminder.sentAt).toLocaleDateString()}`}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold">{inv.amount}</span>
+                  <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${invoiceStatusColor[inv.status]}`}>{inv.status}</span>
+                  <Button size="sm" variant="ghost" onClick={() => exportInvoicePdf(inv, project, brandPayload)}>
+                    <FileDown size={14} /> PDF
+                  </Button>
+                  {(inv.status === "sent" || inv.status === "overdue" || overdue) && inv.status !== "paid" && (
+                    <Button size="sm" variant="ghost" onClick={() => sendReminder(inv)}>
+                      <AlarmClock size={14} /> Remind
+                    </Button>
+                  )}
+                  {inv.status !== "paid" && (
+                    <Button size="sm" variant="ghost" onClick={() => onUpdate((p) => ({
+                      ...p, invoices: p.invoices.map((x) => x.id === inv.id ? { ...x, status: "paid", paidAt: new Date().toISOString() } : x),
+                    }))}><CheckCircle2 size={14} /> Mark paid</Button>
+                  )}
+                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onUpdate((p) => ({
+                    ...p, invoices: p.invoices.filter((x) => x.id !== inv.id),
+                  }))}><Trash2 size={14} /></Button>
+                </div>
+              </li>
+            );
+          })}
           {project.invoices.length === 0 && <li className="text-sm text-muted-foreground py-2">No invoices.</li>}
         </ul>
       </div>
