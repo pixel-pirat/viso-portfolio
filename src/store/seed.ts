@@ -157,6 +157,8 @@ export const seedState: StudioState = {
   ],
   proposals: [],
   clientProjects: [],
+  appointments: [],
+  notifications: [],
   settings: {
     contact: {
       email: "hello@studio.com",
