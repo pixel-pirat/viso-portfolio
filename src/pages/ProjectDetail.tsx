@@ -41,6 +41,14 @@ const ProjectDetail = () => {
         </div>
       </section>
 
+      {project.gallery && project.gallery.length > 0 && (
+        <section className="container-studio pb-8">
+          <span className="text-xs uppercase tracking-widest text-primary">Gallery</span>
+          <h2 className="text-3xl font-display font-bold mt-3 mb-6">Selected work</h2>
+          <MediaGallery items={project.gallery} />
+        </section>
+      )}
+
       {(project.problem || project.solution) && (
         <section className="container-studio py-16 grid md:grid-cols-2 gap-6">
           {project.problem && (
