@@ -1,9 +1,10 @@
-import { Palette, Minus } from "lucide-react";
+import { Palette, Sun, Moon } from "lucide-react";
 import { useTheme, ThemeName } from "./ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const options: { value: ThemeName; label: string; icon: typeof Palette }[] = [
-  { value: "mono", label: "Mono", icon: Minus },
+  { value: "mono", label: "Light", icon: Sun },
+  { value: "mono-dark", label: "Dark", icon: Moon },
   { value: "playful", label: "Playful", icon: Palette },
 ];
 
@@ -27,16 +28,17 @@ const ThemeToggle = ({ className }: { className?: string }) => {
             key={opt.value}
             role="radio"
             aria-checked={active}
+            aria-label={opt.label}
             onClick={() => setTheme(opt.value)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all",
               active
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Icon size={12} />
-            {opt.label}
+            <span className="hidden sm:inline">{opt.label}</span>
           </button>
         );
       })}

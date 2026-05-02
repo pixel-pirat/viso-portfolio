@@ -18,6 +18,13 @@ export type Service = {
   tiers: ServiceTier[];
 };
 
+export type MediaItem = {
+  id: string;
+  kind: "image" | "video";
+  url: string;          // data URL (image) or external URL (video placeholder)
+  caption?: string;
+};
+
 export type Project = {
   slug: string;
   title: string;
@@ -30,6 +37,7 @@ export type Project = {
   isFeatured?: boolean;
   publishedAt: string; // ISO
   coverImage?: string; // base64 data URL or remote URL
+  gallery?: MediaItem[];
 };
 
 export type BlogPost = {
@@ -129,7 +137,14 @@ export type Message = {
   createdAt: string;
 };
 
-export type InvoiceStatus = "draft" | "sent" | "paid";
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
+
+export type InvoiceReminder = {
+  id: string;
+  sentAt: string;
+  channel: "manual" | "auto";
+  note?: string;
+};
 
 export type Invoice = {
   id: string;
@@ -140,6 +155,8 @@ export type Invoice = {
   createdAt: string;
   paidAt?: string;
   milestoneId?: string;
+  dueDate?: string;        // ISO date — used for reminder logic
+  reminders?: InvoiceReminder[];
 };
 
 export type ClientProject = {
@@ -187,6 +204,42 @@ export type Settings = {
   };
 };
 
+export type AppointmentStatus = "pending" | "confirmed" | "declined" | "completed" | "cancelled";
+
+export type Appointment = {
+  id: string;
+  clientId?: string;
+  clientName: string;
+  clientEmail: string;
+  serviceSlug?: string;
+  date: string;            // ISO date (YYYY-MM-DD)
+  time: string;            // HH:mm
+  durationMin: number;
+  notes?: string;
+  status: AppointmentStatus;
+  createdAt: string;
+};
+
+export type NotificationKind =
+  | "message"
+  | "proposal"
+  | "invoice"
+  | "project_update"
+  | "appointment"
+  | "reminder";
+
+export type NotificationItem = {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body?: string;
+  href?: string;
+  /** Account id of the recipient. "admin" = any admin. */
+  audience: "admin" | string;
+  createdAt: string;
+  read: boolean;
+};
+
 export type StudioState = {
   services: Service[];
   projects: Project[];
@@ -197,4 +250,6 @@ export type StudioState = {
   settings: Settings;
   proposals: Proposal[];
   clientProjects: ClientProject[];
+  appointments: Appointment[];
+  notifications: NotificationItem[];
 };

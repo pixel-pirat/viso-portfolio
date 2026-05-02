@@ -56,3 +56,37 @@ export const stageColor: Record<ClientProjectStage, string> = {
   review: "bg-amber-500 text-white",
   delivered: "bg-emerald-500 text-white",
 };
+
+/* ----- Invoice reminder logic (mock scheduler) ----- */
+
+import type { Invoice } from "@/store/types";
+
+/** Days an invoice can be unpaid before being considered overdue. */
+export const OVERDUE_AFTER_DAYS = 7;
+/** Min days between automatic reminders. */
+export const REMINDER_COOLDOWN_DAYS = 3;
+
+export function isOverdue(inv: Invoice, now = Date.now()): boolean {
+  if (inv.status === "paid" || inv.status === "draft") return false;
+  const ref = inv.dueDate ? +new Date(inv.dueDate) : +new Date(inv.createdAt) + OVERDUE_AFTER_DAYS * 86_400_000;
+  return now > ref;
+}
+
+export function daysSinceLastReminder(inv: Invoice, now = Date.now()): number | null {
+  const last = inv.reminders?.[inv.reminders.length - 1];
+  if (!last) return null;
+  return Math.floor((now - +new Date(last.sentAt)) / 86_400_000);
+}
+
+export function shouldAutoRemind(inv: Invoice, now = Date.now()): boolean {
+  if (!isOverdue(inv, now)) return false;
+  const since = daysSinceLastReminder(inv, now);
+  return since === null || since >= REMINDER_COOLDOWN_DAYS;
+}
+
+export const invoiceStatusColor: Record<Invoice["status"], string> = {
+  draft: "bg-secondary text-foreground border border-border",
+  sent: "bg-primary text-primary-foreground",
+  paid: "bg-emerald-500 text-white",
+  overdue: "bg-destructive text-destructive-foreground",
+};

@@ -1,14 +1,16 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Briefcase, FileText, ExternalLink, LogOut } from "lucide-react";
+import { LayoutDashboard, Briefcase, FileText, ExternalLink, LogOut, CalendarDays } from "lucide-react";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import PortalLogin from "./PortalLogin";
+import NotificationBell from "@/components/NotificationBell";
 
 const items = [
   { to: "/portal", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/portal/projects", label: "My projects", icon: Briefcase },
   { to: "/portal/proposals", label: "Proposals", icon: FileText },
+  { to: "/portal/appointments", label: "Appointments", icon: CalendarDays },
 ];
 
 const PortalLayout = () => {
@@ -71,6 +73,9 @@ const PortalLayout = () => {
 
       <main className="min-w-0">
         <div className="container-studio py-10">
+          <div className="flex justify-end mb-4 -mt-2">
+            <NotificationBell />
+          </div>
           <Outlet />
         </div>
       </main>

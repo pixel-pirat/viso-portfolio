@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import { navItems } from "@/data/site";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
+import { useAdminAuth } from "@/admin/AdminAuth";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isAuthed } = useAdminAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -54,6 +57,7 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
+          {isAuthed && <NotificationBell />}
           <Button asChild variant="outline" size="sm">
             <Link to="/portal">Client portal</Link>
           </Button>

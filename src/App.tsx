@@ -7,6 +7,8 @@ import Layout from "./components/Layout";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { StudioProvider } from "./store/StudioStore";
 import { AdminAuthProvider } from "./admin/AdminAuth";
+import NotificationsBridge from "./components/NotificationsBridge";
+import RemindersScheduler from "./components/RemindersScheduler";
 import Home from "./pages/Home";
 import Services from "./pages/Services";
 import ServiceDetail from "./pages/ServiceDetail";
@@ -29,11 +31,13 @@ import AnalyticsAdmin from "./admin/AnalyticsAdmin";
 import SettingsAdmin from "./admin/SettingsAdmin";
 import ProposalsAdmin from "./admin/ProposalsAdmin";
 import ClientProjectsAdmin from "./admin/ClientProjectsAdmin";
+import AppointmentsAdmin from "./admin/AppointmentsAdmin";
 import PortalLayout from "./portal/PortalLayout";
 import PortalDashboard from "./portal/PortalDashboard";
 import PortalProjects from "./portal/PortalProjects";
 import PortalProjectDetail from "./portal/PortalProjectDetail";
 import PortalProposals from "./portal/PortalProposals";
+import PortalAppointments from "./portal/PortalAppointments";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +49,8 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <NotificationsBridge />
+            <RemindersScheduler />
             <BrowserRouter>
               <Routes>
                 <Route element={<Layout />}>
@@ -68,6 +74,7 @@ const App = () => (
                   <Route path="bookings" element={<BookingsAdmin />} />
                   <Route path="proposals" element={<ProposalsAdmin />} />
                   <Route path="client-projects" element={<ClientProjectsAdmin />} />
+                  <Route path="appointments" element={<AppointmentsAdmin />} />
                   <Route path="users" element={<UsersAdmin />} />
                   <Route path="analytics" element={<AnalyticsAdmin />} />
                   <Route path="settings" element={<SettingsAdmin />} />
@@ -78,6 +85,7 @@ const App = () => (
                   <Route path="projects" element={<PortalProjects />} />
                   <Route path="projects/:id" element={<PortalProjectDetail />} />
                   <Route path="proposals" element={<PortalProposals />} />
+                  <Route path="appointments" element={<PortalAppointments />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

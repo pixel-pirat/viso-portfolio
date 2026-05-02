@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronRight, Paperclip, Download, Send, CheckCircle2, FileText } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Paperclip, Download, Send, CheckCircle2, FileText, AlarmClock, FileDown } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -14,10 +14,12 @@ import type {
   ClientProject, ClientProjectStage, Milestone, MilestoneStatus, Invoice,
 } from "@/store/types";
 import {
-  STAGES, stageLabel, stageColor, milestoneProgress,
+  STAGES, stageLabel, stageColor, milestoneProgress, invoiceStatusColor, isOverdue,
 } from "@/lib/lifecycle";
 import { fileToAttachment, downloadDataUrl } from "@/lib/uploads";
 import { toast } from "@/hooks/use-toast";
+import { realtime } from "@/lib/realtime";
+import { exportInvoicePdf, exportProjectSummaryPdf } from "@/lib/pdf";
 
 const MS_STATUSES: MilestoneStatus[] = ["pending", "in_progress", "review", "done"];
 
@@ -75,6 +77,8 @@ const ClientProjectsAdmin = () => {
           {active ? (
             <ProjectDetail
               project={active}
+              brand={state.settings.brand}
+              brandEmail={state.settings.contact.email}
               onUpdate={(fn) => updateProject(active.id, fn)}
               onRemove={() => removeProject(active.id)}
             />
@@ -89,8 +93,10 @@ const ClientProjectsAdmin = () => {
 
 /* ============================================================== */
 
-const ProjectDetail = ({ project, onUpdate, onRemove }: {
+const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
   project: ClientProject;
+  brand: { studioName: string; tagline: string };
+  brandEmail: string;
   onUpdate: (fn: (p: ClientProject) => ClientProject) => void;
   onRemove: () => void;
 }) => {
@@ -109,8 +115,33 @@ const ProjectDetail = ({ project, onUpdate, onRemove }: {
         authorRole: "admin", body, createdAt: new Date().toISOString(),
       }],
     }));
+    realtime.publish({
+      kind: "message",
+      title: `New message from Studio`,
+      body,
+      audience: project.clientId,
+      href: `/portal/projects/${project.id}`,
+    });
     setMsg("");
   };
+
+  const sendReminder = (inv: Invoice) => {
+    const reminder = { id: uid(), sentAt: new Date().toISOString(), channel: "manual" as const };
+    onUpdate((p) => ({
+      ...p,
+      invoices: p.invoices.map((i) => i.id === inv.id ? { ...i, reminders: [...(i.reminders ?? []), reminder] } : i),
+    }));
+    realtime.publish({
+      kind: "reminder",
+      title: `Payment reminder for ${inv.number}`,
+      body: `${inv.amount} — ${inv.description}`,
+      audience: project.clientId,
+      href: `/portal/projects/${project.id}`,
+    });
+    toast({ title: "Reminder sent" });
+  };
+
+  const brandPayload = { studioName: brand.studioName, tagline: brand.tagline, email: brandEmail };
 
   const onAttachDeliverable = async (msId: string, files: FileList | null) => {
     if (!files?.length) return;
@@ -143,6 +174,9 @@ const ProjectDetail = ({ project, onUpdate, onRemove }: {
                 {STAGES.map((s) => <SelectItem key={s} value={s}>{stageLabel(s)}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button size="sm" variant="outline" onClick={() => exportProjectSummaryPdf(project, brandPayload)}>
+              <FileDown size={14} /> Export PDF
+            </Button>
             <Button size="sm" variant="ghost" className="text-destructive" onClick={onRemove}>
               <Trash2 size={14} />
             </Button>
@@ -228,29 +262,43 @@ const ProjectDetail = ({ project, onUpdate, onRemove }: {
         </div>
 
         <ul className="divide-y divide-border">
-          {project.invoices.map((inv) => (
-            <li key={inv.id} className="py-3 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <div className="font-medium text-sm">{inv.number} — {inv.description}</div>
-                <div className="text-xs text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString()}{inv.paidAt && ` · paid ${new Date(inv.paidAt).toLocaleDateString()}`}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{inv.amount}</span>
-                <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                  inv.status === "paid" ? "bg-emerald-500 text-white"
-                  : inv.status === "sent" ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-foreground border border-border"}`}>{inv.status}</span>
-                {inv.status !== "paid" && (
-                  <Button size="sm" variant="ghost" onClick={() => onUpdate((p) => ({
-                    ...p, invoices: p.invoices.map((x) => x.id === inv.id ? { ...x, status: "paid", paidAt: new Date().toISOString() } : x),
-                  }))}><CheckCircle2 size={14} /> Mark paid</Button>
-                )}
-                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onUpdate((p) => ({
-                  ...p, invoices: p.invoices.filter((x) => x.id !== inv.id),
-                }))}><Trash2 size={14} /></Button>
-              </div>
-            </li>
-          ))}
+          {project.invoices.map((inv) => {
+            const overdue = isOverdue(inv);
+            const lastReminder = inv.reminders?.[inv.reminders.length - 1];
+            return (
+              <li key={inv.id} className="py-3 flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="font-medium text-sm">{inv.number} — {inv.description}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(inv.createdAt).toLocaleDateString()}
+                    {inv.dueDate && ` · due ${new Date(inv.dueDate).toLocaleDateString()}`}
+                    {inv.paidAt && ` · paid ${new Date(inv.paidAt).toLocaleDateString()}`}
+                    {lastReminder && ` · last reminder ${new Date(lastReminder.sentAt).toLocaleDateString()}`}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold">{inv.amount}</span>
+                  <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${invoiceStatusColor[inv.status]}`}>{inv.status}</span>
+                  <Button size="sm" variant="ghost" onClick={() => exportInvoicePdf(inv, project, brandPayload)}>
+                    <FileDown size={14} /> PDF
+                  </Button>
+                  {(inv.status === "sent" || inv.status === "overdue" || overdue) && inv.status !== "paid" && (
+                    <Button size="sm" variant="ghost" onClick={() => sendReminder(inv)}>
+                      <AlarmClock size={14} /> Remind
+                    </Button>
+                  )}
+                  {inv.status !== "paid" && (
+                    <Button size="sm" variant="ghost" onClick={() => onUpdate((p) => ({
+                      ...p, invoices: p.invoices.map((x) => x.id === inv.id ? { ...x, status: "paid", paidAt: new Date().toISOString() } : x),
+                    }))}><CheckCircle2 size={14} /> Mark paid</Button>
+                  )}
+                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onUpdate((p) => ({
+                    ...p, invoices: p.invoices.filter((x) => x.id !== inv.id),
+                  }))}><Trash2 size={14} /></Button>
+                </div>
+              </li>
+            );
+          })}
           {project.invoices.length === 0 && <li className="text-sm text-muted-foreground py-2">No invoices.</li>}
         </ul>
       </div>
@@ -295,10 +343,20 @@ const ProjectDetail = ({ project, onUpdate, onRemove }: {
         existing={invMode.inv}
         nextNumber={`INV-${String(project.invoices.length + 1).padStart(3, "0")}`}
         onSave={(data) => {
-          onUpdate((p) => ({
-            ...p,
-            invoices: [...p.invoices, { id: uid(), createdAt: new Date().toISOString(), status: "sent", ...data }],
-          }));
+          const newInv: Invoice = {
+            id: uid(),
+            createdAt: new Date().toISOString(),
+            status: "sent",
+            ...data,
+          };
+          onUpdate((p) => ({ ...p, invoices: [...p.invoices, newInv] }));
+          realtime.publish({
+            kind: "invoice",
+            title: `New invoice ${newInv.number}`,
+            body: `${newInv.amount} — ${newInv.description}`,
+            audience: project.clientId,
+            href: `/portal/projects/${project.id}`,
+          });
           setInvMode({ open: false });
         }}
       />
@@ -341,11 +399,12 @@ const InvoiceDialog = ({ open, onOpenChange, existing, nextNumber, onSave }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   existing?: Invoice;
   nextNumber: string;
-  onSave: (data: { number: string; description: string; amount: string }) => void;
+  onSave: (data: { number: string; description: string; amount: string; dueDate?: string }) => void;
 }) => {
   const [number, setNumber] = useState(existing?.number ?? nextNumber);
   const [description, setDescription] = useState(existing?.description ?? "");
   const [amount, setAmount] = useState(existing?.amount ?? "");
+  const [dueDate, setDueDate] = useState(existing?.dueDate?.slice(0, 10) ?? "");
 
   return (
     <Dialog open={open} onOpenChange={(v) => {
@@ -354,16 +413,22 @@ const InvoiceDialog = ({ open, onOpenChange, existing, nextNumber, onSave }: {
         setNumber(existing?.number ?? nextNumber);
         setDescription(existing?.description ?? "");
         setAmount(existing?.amount ?? "");
+        setDueDate(existing?.dueDate?.slice(0, 10) ?? "");
       }
     }}>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>{existing ? "Edit invoice" : "New invoice"}</DialogTitle></DialogHeader>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (!description.trim() || !amount.trim()) return; onSave({ number, description, amount }); }}>
+        <form className="space-y-3" onSubmit={(e) => {
+          e.preventDefault();
+          if (!description.trim() || !amount.trim()) return;
+          onSave({ number, description, amount, dueDate: dueDate ? new Date(dueDate).toISOString() : undefined });
+        }}>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Number</Label><Input value={number} onChange={(e) => setNumber(e.target.value)} /></div>
             <div><Label>Amount</Label><Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="$2,000" required /></div>
           </div>
           <div><Label>Description</Label><Input value={description} onChange={(e) => setDescription(e.target.value)} required /></div>
+          <div><Label>Due date (optional)</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
           <DialogFooter><Button type="submit" variant="hero">Save</Button></DialogFooter>
         </form>
       </DialogContent>

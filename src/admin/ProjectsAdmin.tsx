@@ -13,8 +13,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import type { Project } from "@/store/types";
+import type { Project, MediaItem } from "@/store/types";
 import { readImageDownscaled } from "@/lib/uploads";
+
+const rid = () => Math.random().toString(36).slice(2, 10);
 
 const empty = (): Project => ({
   slug: "", title: "", category: "Web", excerpt: "", problem: "", solution: "",
@@ -151,6 +153,10 @@ const ProjectsAdmin = () => {
                   })}
                 />
               </div>
+              <GalleryField
+                value={editing.gallery ?? []}
+                onChange={(g) => setEditing({ ...editing, gallery: g })}
+              />
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!editing.isFeatured} onChange={(e) => setEditing({ ...editing, isFeatured: e.target.checked })} />
                 Featured on homepage
@@ -202,6 +208,46 @@ const CoverImageField = ({
         )}
       </div>
       <p className="text-[11px] text-muted-foreground">Resized to max 1280px and stored locally (~150–500KB typical).</p>
+    </div>
+  );
+};
+
+const GalleryField = ({ value, onChange }: { value: MediaItem[]; onChange: (v: MediaItem[]) => void }) => {
+  const ref = useRef<HTMLInputElement>(null);
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const next: MediaItem[] = [...value];
+    for (const f of Array.from(files)) {
+      try {
+        const url = await readImageDownscaled(f, 1280, 0.82);
+        next.push({ id: rid(), kind: "image", url, caption: f.name });
+      } catch (e) {
+        toast({ title: "Skipped", description: (e as Error).message, variant: "destructive" });
+      }
+    }
+    onChange(next);
+  };
+  return (
+    <div className="space-y-2">
+      <Label>Gallery (images)</Label>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {value.map((m) => (
+          <div key={m.id} className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary">
+            <img src={m.url} alt={m.caption ?? ""} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => onChange(value.filter((x) => x.id !== m.id))}
+              className="absolute top-1 right-1 grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white"
+              aria-label="Remove"
+            ><Trash2 size={12} /></button>
+          </div>
+        ))}
+      </div>
+      <input ref={ref} type="file" accept="image/*" multiple className="hidden"
+        onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }} />
+      <Button type="button" size="sm" variant="outline" onClick={() => ref.current?.click()}>
+        <Upload size={14} /> Add images
+      </Button>
     </div>
   );
 };
