@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronRight, Paperclip, Download, Send, CheckCircle2, FileText } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Paperclip, Download, Send, CheckCircle2, FileText, AlarmClock, FileDown } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -14,10 +14,12 @@ import type {
   ClientProject, ClientProjectStage, Milestone, MilestoneStatus, Invoice,
 } from "@/store/types";
 import {
-  STAGES, stageLabel, stageColor, milestoneProgress,
+  STAGES, stageLabel, stageColor, milestoneProgress, invoiceStatusColor, isOverdue,
 } from "@/lib/lifecycle";
 import { fileToAttachment, downloadDataUrl } from "@/lib/uploads";
 import { toast } from "@/hooks/use-toast";
+import { realtime } from "@/lib/realtime";
+import { exportInvoicePdf, exportProjectSummaryPdf } from "@/lib/pdf";
 
 const MS_STATUSES: MilestoneStatus[] = ["pending", "in_progress", "review", "done"];
 
