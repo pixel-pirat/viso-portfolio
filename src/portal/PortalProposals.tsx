@@ -5,16 +5,30 @@ import { Button } from "@/components/ui/button";
 import { proposalStatusColor } from "@/lib/lifecycle";
 import { useMyData } from "./PortalDashboard";
 import { toast } from "@/hooks/use-toast";
+import { realtime } from "@/lib/realtime";
+import { exportProposalPdf } from "@/lib/pdf";
+import { FileDown } from "lucide-react";
 
 const PortalProposals = () => {
-  const { setState } = useStudio();
+  const { state, setState } = useStudio();
+  const { session } = useAdminAuth();
   const { proposals } = useMyData();
 
   const decide = (id: string, status: "accepted" | "declined") => {
+    const p = state.proposals.find((x) => x.id === id);
     setState((s) => ({
       ...s,
-      proposals: s.proposals.map((p) => p.id === id ? { ...p, status, decidedAt: new Date().toISOString() } : p),
+      proposals: s.proposals.map((x) => x.id === id ? { ...x, status, decidedAt: new Date().toISOString() } : x),
     }));
+    if (p) {
+      realtime.publish({
+        kind: "proposal",
+        title: `Proposal ${status}`,
+        body: `${p.clientName} ${status} "${p.title}"`,
+        audience: "admin",
+        href: "/admin/proposals",
+      });
+    }
     toast({ title: status === "accepted" ? "Proposal accepted" : "Proposal declined", description: status === "accepted" ? "Your studio will start the project shortly." : "Thanks for letting us know." });
   };
 
@@ -62,9 +76,19 @@ const PortalProposals = () => {
             )}
 
             {p.status === "sent" && (
-              <div className="flex gap-2 mt-6">
+              <div className="flex gap-2 mt-6 flex-wrap">
                 <Button variant="hero" onClick={() => decide(p.id, "accepted")}>Accept proposal</Button>
                 <Button variant="ghost" className="text-destructive" onClick={() => decide(p.id, "declined")}>Decline</Button>
+                <Button variant="outline" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
+                  <FileDown size={14} /> Download PDF
+                </Button>
+              </div>
+            )}
+            {p.status !== "sent" && (
+              <div className="mt-6">
+                <Button variant="outline" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
+                  <FileDown size={14} /> Download PDF
+                </Button>
               </div>
             )}
           </div>
