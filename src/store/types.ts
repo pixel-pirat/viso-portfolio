@@ -137,7 +137,14 @@ export type Message = {
   createdAt: string;
 };
 
-export type InvoiceStatus = "draft" | "sent" | "paid";
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
+
+export type InvoiceReminder = {
+  id: string;
+  sentAt: string;
+  channel: "manual" | "auto";
+  note?: string;
+};
 
 export type Invoice = {
   id: string;
@@ -148,6 +155,8 @@ export type Invoice = {
   createdAt: string;
   paidAt?: string;
   milestoneId?: string;
+  dueDate?: string;        // ISO date — used for reminder logic
+  reminders?: InvoiceReminder[];
 };
 
 export type ClientProject = {
