@@ -2,13 +2,14 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Briefcase, Wrench, BookOpen, Calendar, Users,
   BarChart3, Settings as SettingsIcon, Sparkles, LogOut, ExternalLink,
-  FileText, FolderKanban,
+  FileText, FolderKanban, CalendarDays,
 } from "lucide-react";
 import { useAdminAuth } from "./AdminAuth";
 import AdminLogin from "./AdminLogin";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useStudio } from "@/store/StudioStore";
+import NotificationBell from "@/components/NotificationBell";
 
 const items = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -19,6 +20,7 @@ const items = [
   { to: "/admin/bookings", label: "Bookings", icon: Calendar },
   { to: "/admin/proposals", label: "Proposals", icon: FileText },
   { to: "/admin/client-projects", label: "Client Projects", icon: FolderKanban },
+  { to: "/admin/appointments", label: "Appointments", icon: CalendarDays },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
@@ -107,6 +109,9 @@ const AdminLayout = () => {
 
       <main className="min-w-0">
         <div className="container-studio py-10">
+          <div className="flex justify-end mb-4 -mt-2">
+            <NotificationBell />
+          </div>
           <Outlet />
         </div>
       </main>
