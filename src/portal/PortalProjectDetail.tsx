@@ -8,6 +8,8 @@ import { ArrowLeft, Send, Download, FileText, Paperclip, CheckCircle2 } from "lu
 import { stageColor, stageLabel, milestoneProgress, STAGES } from "@/lib/lifecycle";
 import { downloadDataUrl, fileToAttachment } from "@/lib/uploads";
 import { toast } from "@/hooks/use-toast";
+import { realtime } from "@/lib/realtime";
+import { exportInvoicePdf, exportProjectSummaryPdf } from "@/lib/pdf";
 import type { ClientProject } from "@/store/types";
 
 const PortalProjectDetail = () => {
@@ -46,6 +48,13 @@ const PortalProjectDetail = () => {
         createdAt: new Date().toISOString(),
       }],
     }));
+    realtime.publish({
+      kind: "message",
+      title: `New message from ${session.name}`,
+      body,
+      audience: "admin",
+      href: "/admin/client-projects",
+    });
     setMsg("");
   };
 
@@ -71,8 +80,18 @@ const PortalProjectDetail = () => {
       ...p,
       invoices: p.invoices.map((i) => i.id === invId ? { ...i, status: "paid", paidAt: new Date().toISOString() } : i),
     }));
+    const inv = project.invoices.find((i) => i.id === invId);
+    realtime.publish({
+      kind: "invoice",
+      title: `Invoice ${inv?.number ?? ""} paid`,
+      body: `${project.clientName} marked ${inv?.amount ?? ""} as paid.`,
+      audience: "admin",
+      href: "/admin/client-projects",
+    });
     toast({ title: "Payment recorded", description: "This is a mock payment — no real charge made." });
   };
+
+  const brand = { studioName: state.settings.brand.studioName, tagline: state.settings.brand.tagline, email: state.settings.contact.email };
 
   return (
     <>
