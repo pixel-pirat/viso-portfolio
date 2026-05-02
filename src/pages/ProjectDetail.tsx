@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CTASection from "@/components/CTASection";
+import MediaGallery from "@/components/MediaGallery";
 import { useStudio } from "@/store/StudioStore";
 
 const ProjectDetail = () => {
