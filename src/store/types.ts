@@ -240,6 +240,91 @@ export type NotificationItem = {
   read: boolean;
 };
 
+export type CollabCategory =
+  | "SaaS" | "Mobile Apps" | "AI/ML" | "FinTech"
+  | "Media & Content" | "Creative Projects" | "E-commerce"
+  | "Social Platforms" | "Other";
+
+export type CollabStage = "idea" | "validating" | "building" | "launched" | "scaling";
+export type CollabVisibility = "public" | "invite_only" | "private_preview";
+export type CollabRoleNeeded = "developer" | "designer" | "investor" | "contributor" | "advisor" | "co-founder";
+export type CollabStatus = "active" | "flagged" | "removed";
+export type CollabFundingStatus = "self_funded" | "seeking" | "funded" | "n/a";
+
+export type CollabAttachment = Attachment;
+
+export type Collaboration = {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  title: string;
+  summary: string;
+  description: string;
+  goals: string;
+  category: CollabCategory;
+  tags: string[];
+  skillsNeeded: string[];
+  rolesNeeded: CollabRoleNeeded[];
+  stage: CollabStage;
+  visibility: CollabVisibility;
+  fundingStatus: CollabFundingStatus;
+  fundingGoal?: string;
+  teamSize: number;
+  requiresNda: boolean;
+  attachments?: CollabAttachment[];
+  coverImage?: string;
+  status: CollabStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CollabRequestKind = "join" | "interest" | "investor" | "contact";
+export type CollabRequestStatus = "pending" | "accepted" | "declined";
+
+export type CollaborationRequest = {
+  id: string;
+  collaborationId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  kind: CollabRequestKind;
+  role?: CollabRoleNeeded;
+  message: string;
+  status: CollabRequestStatus;
+  createdAt: string;
+};
+
+export type CollabUpdateKind = "update" | "discussion" | "log";
+
+export type CollaborationUpdate = {
+  id: string;
+  collaborationId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: "founder" | "contributor" | "visitor";
+  kind: CollabUpdateKind;
+  body: string;
+  createdAt: string;
+};
+
+export type CollaborationReport = {
+  id: string;
+  collaborationId: string;
+  reporterId: string;
+  reporterName: string;
+  reason: "plagiarism" | "abuse" | "spam" | "ip_violation" | "other";
+  details: string;
+  status: "open" | "reviewed" | "dismissed";
+  createdAt: string;
+};
+
+export type CollabConsent = {
+  userId: string;
+  acceptedAt: string;
+  version: string;
+};
+
 export type StudioState = {
   services: Service[];
   projects: Project[];
@@ -252,4 +337,9 @@ export type StudioState = {
   clientProjects: ClientProject[];
   appointments: Appointment[];
   notifications: NotificationItem[];
+  collaborations: Collaboration[];
+  collaborationRequests: CollaborationRequest[];
+  collaborationUpdates: CollaborationUpdate[];
+  collaborationReports: CollaborationReport[];
+  collabConsents: CollabConsent[];
 };

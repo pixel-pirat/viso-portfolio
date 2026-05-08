@@ -38,6 +38,10 @@ import PortalProjects from "./portal/PortalProjects";
 import PortalProjectDetail from "./portal/PortalProjectDetail";
 import PortalProposals from "./portal/PortalProposals";
 import PortalAppointments from "./portal/PortalAppointments";
+import PortalCollaborations from "./portal/PortalCollaborations";
+import Collaborations from "./pages/Collaborations";
+import CollaborationDetail from "./pages/CollaborationDetail";
+import CollaborationsAdmin from "./admin/CollaborationsAdmin";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +69,9 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                 </Route>
 
+                <Route path="/collaborations" element={<Collaborations />} />
+                <Route path="/collaborations/:id" element={<CollaborationDetail />} />
+
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="projects" element={<ProjectsAdmin />} />
@@ -75,6 +82,7 @@ const App = () => (
                   <Route path="proposals" element={<ProposalsAdmin />} />
                   <Route path="client-projects" element={<ClientProjectsAdmin />} />
                   <Route path="appointments" element={<AppointmentsAdmin />} />
+                  <Route path="collaborations" element={<CollaborationsAdmin />} />
                   <Route path="users" element={<UsersAdmin />} />
                   <Route path="analytics" element={<AnalyticsAdmin />} />
                   <Route path="settings" element={<SettingsAdmin />} />
@@ -86,6 +94,7 @@ const App = () => (
                   <Route path="projects/:id" element={<PortalProjectDetail />} />
                   <Route path="proposals" element={<PortalProposals />} />
                   <Route path="appointments" element={<PortalAppointments />} />
+                  <Route path="collaborations" element={<PortalCollaborations />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

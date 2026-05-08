@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Briefcase, Wrench, BookOpen, Calendar, Users,
   BarChart3, Settings as SettingsIcon, Sparkles, LogOut, ExternalLink,
-  FileText, FolderKanban, CalendarDays,
+  FileText, FolderKanban, CalendarDays, Network,
 } from "lucide-react";
 import { useAdminAuth } from "./AdminAuth";
 import AdminLogin from "./AdminLogin";
@@ -21,6 +21,7 @@ const items = [
   { to: "/admin/proposals", label: "Proposals", icon: FileText },
   { to: "/admin/client-projects", label: "Client Projects", icon: FolderKanban },
   { to: "/admin/appointments", label: "Appointments", icon: CalendarDays },
+  { to: "/admin/collaborations", label: "Collaborations", icon: Network },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
