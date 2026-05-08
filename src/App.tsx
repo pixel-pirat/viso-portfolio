@@ -82,6 +82,7 @@ const App = () => (
                   <Route path="proposals" element={<ProposalsAdmin />} />
                   <Route path="client-projects" element={<ClientProjectsAdmin />} />
                   <Route path="appointments" element={<AppointmentsAdmin />} />
+                  <Route path="collaborations" element={<CollaborationsAdmin />} />
                   <Route path="users" element={<UsersAdmin />} />
                   <Route path="analytics" element={<AnalyticsAdmin />} />
                   <Route path="settings" element={<SettingsAdmin />} />
@@ -93,6 +94,7 @@ const App = () => (
                   <Route path="projects/:id" element={<PortalProjectDetail />} />
                   <Route path="proposals" element={<PortalProposals />} />
                   <Route path="appointments" element={<PortalAppointments />} />
+                  <Route path="collaborations" element={<PortalCollaborations />} />
                 </Route>
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

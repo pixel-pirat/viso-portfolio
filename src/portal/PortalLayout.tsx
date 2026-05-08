@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Briefcase, FileText, ExternalLink, LogOut, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Briefcase, FileText, ExternalLink, LogOut, CalendarDays, Network } from "lucide-react";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ const items = [
   { to: "/portal/projects", label: "My projects", icon: Briefcase },
   { to: "/portal/proposals", label: "Proposals", icon: FileText },
   { to: "/portal/appointments", label: "Appointments", icon: CalendarDays },
+  { to: "/portal/collaborations", label: "Collaborations", icon: Network },
 ];
 
 const PortalLayout = () => {
