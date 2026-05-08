@@ -38,6 +38,10 @@ import PortalProjects from "./portal/PortalProjects";
 import PortalProjectDetail from "./portal/PortalProjectDetail";
 import PortalProposals from "./portal/PortalProposals";
 import PortalAppointments from "./portal/PortalAppointments";
+import PortalCollaborations from "./portal/PortalCollaborations";
+import Collaborations from "./pages/Collaborations";
+import CollaborationDetail from "./pages/CollaborationDetail";
+import CollaborationsAdmin from "./admin/CollaborationsAdmin";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +68,9 @@ const App = () => (
                   <Route path="/blog/:slug" element={<BlogDetail />} />
                   <Route path="/contact" element={<Contact />} />
                 </Route>
+
+                <Route path="/collaborations" element={<Collaborations />} />
+                <Route path="/collaborations/:id" element={<CollaborationDetail />} />
 
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Dashboard />} />
