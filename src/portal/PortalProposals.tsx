@@ -79,14 +79,14 @@ const PortalProposals = () => {
               <div className="flex gap-2 mt-6 flex-wrap">
                 <Button variant="hero" onClick={() => decide(p.id, "accepted")}>Accept proposal</Button>
                 <Button variant="ghost" className="text-destructive" onClick={() => decide(p.id, "declined")}>Decline</Button>
-                <Button variant="outline" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
+                <Button variant="outline" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, legalName: state.settings.brand.legalName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
                   <FileDown size={14} /> Download PDF
                 </Button>
               </div>
             )}
             {p.status !== "sent" && (
               <div className="mt-6">
-                <Button variant="outline" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
+                <Button variant="outline" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, legalName: state.settings.brand.legalName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
                   <FileDown size={14} /> Download PDF
                 </Button>
               </div>
