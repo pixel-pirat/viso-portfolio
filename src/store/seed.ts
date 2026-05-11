@@ -237,7 +237,7 @@ export const seedState: StudioState = {
       location: "Lisbon, PT",
     },
     brand: {
-      studioName: "Studio",
+      studioName: "VISO inc",
       tagline: "We design digital experiences that perform.",
     },
   },
