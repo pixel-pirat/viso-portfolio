@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, R
 import type { StudioState } from "./types";
 import { seedState } from "./seed";
 
-const STORAGE_KEY = "studio:state:v2";
+const STORAGE_KEY = "studio:state:v3";
 
 type Ctx = {
   state: StudioState;
