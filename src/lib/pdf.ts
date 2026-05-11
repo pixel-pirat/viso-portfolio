@@ -14,7 +14,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import type { Invoice, Proposal, ClientProject } from "@/store/types";
 
-type Brand = { studioName: string; tagline?: string; email?: string };
+type Brand = { studioName: string; legalName?: string; tagline?: string; email?: string };
 
 const A4 = { width: 210, height: 297 }; // mm
 
@@ -63,7 +63,7 @@ function header(brand: Brand) {
   return `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid #e5e5e5;padding-bottom:18px;margin-bottom:28px;">
       <div>
-        <div style="font-family:'Sora',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;">${brand.studioName}</div>
+        <div style="font-family:'Sora',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;">${brand.legalName || brand.studioName}</div>
         ${brand.tagline ? `<div style="font-size:11px;color:#6b6b6b;margin-top:4px;">${brand.tagline}</div>` : ""}
       </div>
       ${brand.email ? `<div style="font-size:11px;color:#6b6b6b;text-align:right;">${brand.email}</div>` : ""}
