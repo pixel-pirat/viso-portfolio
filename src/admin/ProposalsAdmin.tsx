@@ -128,7 +128,7 @@ const ProposalsAdmin = () => {
                       <Rocket size={14} /> Start project
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
+                  <Button size="sm" variant="ghost" onClick={() => exportProposalPdf(p, { studioName: state.settings.brand.studioName, legalName: state.settings.brand.legalName, tagline: state.settings.brand.tagline, email: state.settings.contact.email })}>
                     <FileDown size={14} /> Export PDF
                   </Button>
                   <Button size="sm" variant="ghost" className="text-destructive justify-start" onClick={() => remove(p.id)}>

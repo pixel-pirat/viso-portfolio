@@ -58,7 +58,7 @@ const Footer = () => {
       </div>
       <div className="border-t border-border">
         <div className="container-studio py-6 flex flex-col md:flex-row justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} {brand.studioName}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {brand.legalName ?? brand.studioName}. All rights reserved.</p>
           <p>Designed & built with intention.</p>
         </div>
       </div>

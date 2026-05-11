@@ -40,7 +40,8 @@ const SettingsAdmin = () => {
       <div className="grid lg:grid-cols-2 gap-5">
         <section className="surface-card p-6 space-y-4">
           <h2 className="font-display text-lg font-semibold">Brand</h2>
-          <div><Label>Studio name</Label><Input value={s.brand.studioName} onChange={(e) => onBrand({ studioName: e.target.value })} /></div>
+          <div><Label>Brand name</Label><Input value={s.brand.studioName} onChange={(e) => onBrand({ studioName: e.target.value })} /></div>
+          <div><Label>Legal name (used on documents)</Label><Input value={s.brand.legalName} onChange={(e) => onBrand({ legalName: e.target.value })} /></div>
           <div><Label>Tagline</Label><Input value={s.brand.tagline} onChange={(e) => onBrand({ tagline: e.target.value })} /></div>
         </section>
 

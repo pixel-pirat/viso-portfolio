@@ -200,6 +200,7 @@ export type Settings = {
   };
   brand: {
     studioName: string;
+    legalName: string;
     tagline: string;
   };
 };

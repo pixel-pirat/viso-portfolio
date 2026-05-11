@@ -91,7 +91,7 @@ const PortalProjectDetail = () => {
     toast({ title: "Payment recorded", description: "This is a mock payment — no real charge made." });
   };
 
-  const brand = { studioName: state.settings.brand.studioName, tagline: state.settings.brand.tagline, email: state.settings.contact.email };
+  const brand = { studioName: state.settings.brand.studioName, legalName: state.settings.brand.legalName, tagline: state.settings.brand.tagline, email: state.settings.contact.email };
 
   return (
     <>

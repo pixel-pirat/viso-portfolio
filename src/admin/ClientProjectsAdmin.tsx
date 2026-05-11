@@ -95,7 +95,7 @@ const ClientProjectsAdmin = () => {
 
 const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
   project: ClientProject;
-  brand: { studioName: string; tagline: string };
+  brand: { studioName: string; legalName?: string; tagline: string };
   brandEmail: string;
   onUpdate: (fn: (p: ClientProject) => ClientProject) => void;
   onRemove: () => void;
@@ -141,7 +141,7 @@ const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
     toast({ title: "Reminder sent" });
   };
 
-  const brandPayload = { studioName: brand.studioName, tagline: brand.tagline, email: brandEmail };
+  const brandPayload = { studioName: brand.studioName, legalName: brand.legalName, tagline: brand.tagline, email: brandEmail };
 
   const onAttachDeliverable = async (msId: string, files: FileList | null) => {
     if (!files?.length) return;
