@@ -32,7 +32,7 @@ const Navbar = () => {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-glow">
             ◆
           </span>
-          <span>Studio</span>
+          <span>Viso</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
