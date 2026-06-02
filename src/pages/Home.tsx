@@ -146,9 +146,18 @@ const Home = () => {
             <Link key={p.slug} to={`/projects/${p.slug}`} className="group surface-card p-8 block">
               <div className="aspect-[16/10] mb-6 rounded-xl bg-gradient-to-br from-primary/20 via-secondary to-accent-purple/20 grid place-items-center relative overflow-hidden">
                 <div className="absolute inset-0 grid-bg opacity-50" />
-                <span className="relative font-display text-6xl font-bold text-gradient">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+                {p.coverImage ? (
+                  <img
+                    src={p.coverImage}
+                    alt={p.title}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="relative font-display text-6xl font-bold text-gradient">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                )}
               </div>
               <div className="flex items-center justify-between">
                 <div>
