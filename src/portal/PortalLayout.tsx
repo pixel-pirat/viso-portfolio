@@ -27,7 +27,7 @@ const PortalLayout = () => {
     <div className="min-h-screen bg-background grid lg:grid-cols-[260px_1fr]">
       <aside className="border-r border-border bg-card lg:sticky lg:top-0 lg:h-screen flex flex-col">
         <div className="p-5 border-b border-border flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-glow">◆</span>
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-glow"></span>
           <div>
             <div className="font-display font-bold leading-none">Studio</div>
             <div className="text-[11px] text-muted-foreground mt-0.5">Client Portal</div>

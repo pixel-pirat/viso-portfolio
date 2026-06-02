@@ -29,10 +29,9 @@ const Navbar = () => {
     >
       <div className="container-studio flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-glow">
-            ◆
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-glow text-[9px] font-black tracking-tight">
           </span>
-          <span>Viso</span>
+          <span>VISO</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">

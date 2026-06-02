@@ -18,7 +18,7 @@ const Footer = () => {
       <div className="container-studio py-16 grid gap-12 md:grid-cols-4">
         <div className="md:col-span-2 space-y-4">
           <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary text-primary-foreground">◆</span>
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-primary text-primary-foreground"></span>
             <span>{brand.studioName}</span>
           </Link>
           <p className="text-muted-foreground max-w-sm">{brand.tagline}</p>
