@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, CheckCheck, MessageSquare, FileText, Receipt, FolderKanban, Calendar, AlarmClock, Trash2 } from "lucide-react";
-import { useStudio } from "@/store/StudioStore";
+import { useNotifications } from "@/lib/useData";
+import { useApi } from "@/lib/useApi";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -18,33 +19,32 @@ const ICONS: Record<NotificationKind, typeof Bell> = {
 };
 
 const NotificationBell = ({ className }: { className?: string }) => {
-  const { state, setState } = useStudio();
+  const { data: notifications = [] } = useNotifications();
+  const { markNotificationsRead, clearNotifications } = useApi();
   const { session } = useAdminAuth();
   const [open, setOpen] = useState(false);
 
   const visible = useMemo(() => {
-    return state.notifications.filter((n) => {
+    return (notifications as NotificationItem[]).filter((n) => {
       if (!session) return false;
       if (session.role === "admin") return n.audience === "admin";
       return n.audience === session.id;
     });
-  }, [state.notifications, session]);
+  }, [notifications, session]);
 
   const unread = visible.filter((n) => !n.read).length;
 
-  const markAllRead = () =>
-    setState((s) => ({
-      ...s,
-      notifications: s.notifications.map((n) =>
-        visible.some((v) => v.id === n.id) ? { ...n, read: true } : n,
-      ),
-    }));
+  const markAllRead = () => {
+    const ids = visible.filter((n) => !n.read).map((n) => n.id);
+    if (ids.length) markNotificationsRead(ids);
+  };
 
-  const markRead = (id: string) =>
-    setState((s) => ({ ...s, notifications: s.notifications.map((n) => n.id === id ? { ...n, read: true } : n) }));
+  const markRead = (id: string) => markNotificationsRead([id]);
 
-  const clearAll = () =>
-    setState((s) => ({ ...s, notifications: s.notifications.filter((n) => !visible.some((v) => v.id === n.id)) }));
+  const clearAll = () => {
+    const ids = visible.map((n) => n.id);
+    if (ids.length) clearNotifications(ids);
+  };
 
   if (!session) return null;
 

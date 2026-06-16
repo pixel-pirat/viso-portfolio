@@ -8,7 +8,7 @@ const router = Router();
 router.get("/", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const rows = await query(
-      `SELECT id, kind, title, body, href, audience, is_read, created_at
+      `SELECT id, kind, title, body, href, audience, is_read AS read, created_at AS "createdAt"
        FROM notifications
        WHERE audience='admin' OR audience=$1
        ORDER BY created_at DESC LIMIT 50`,
@@ -43,8 +43,8 @@ router.post("/read-all", requireAuth, async (req: Request, res: Response, next: 
   }
 });
 
-// POST /api/notifications (admin — broadcast)
-router.post("/", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/notifications (auth — broadcast/create)
+router.post("/", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { kind, title, body, href, audience = "admin" } = req.body;
     const [row] = await query<{ id: string }>(

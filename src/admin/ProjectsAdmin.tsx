@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { Pencil, Plus, Trash2, Star, Upload, Image as ImageIcon } from "lucide-react";
-import { useStudio } from "@/store/StudioStore";
+import { Pencil, Plus, Trash2, Star, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useApi } from "@/lib/useApi";
+import { useProjects } from "@/lib/useData";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ const empty = (): Project => ({
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 const ProjectsAdmin = () => {
-  const { state } = useStudio();
+  const { data: projects = [], isLoading } = useProjects(undefined, true);
   const { saveProject, deleteProject, toggleFeatured: apiFeatured } = useApi();
   const [editing, setEditing] = useState<Project | null>(null);
   const [open, setOpen] = useState(false);
@@ -38,7 +38,7 @@ const ProjectsAdmin = () => {
   const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) return toast({ title: "Title required", variant: "destructive" });
-    const isNew = !state.projects.find((p) => p.slug === (editing.slug || editing.title));
+    const isNew = !projects.find((p) => p.slug === (editing.slug || editing.title));
     await saveProject(editing, isNew);
     toast({ title: "Project saved" });
     setOpen(false);
@@ -53,6 +53,14 @@ const ProjectsAdmin = () => {
     apiFeatured(slug, !current);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-[50vh] grid place-items-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -61,11 +69,11 @@ const ProjectsAdmin = () => {
         actions={<Button variant="hero" onClick={openNew}><Plus size={16} /> New project</Button>}
       />
 
-      {state.projects.length === 0 ? (
+      {projects.length === 0 ? (
         <EmptyState title="No projects yet" action={<Button onClick={openNew}><Plus size={16} /> Add the first</Button>} />
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
-          {state.projects.map((p) => (
+          {projects.map((p) => (
             <div key={p.slug} className="surface-card p-5">
               <div className="aspect-[16/9] mb-4 rounded-lg overflow-hidden border border-border bg-secondary">
                 {p.coverImage ? (
@@ -101,7 +109,7 @@ const ProjectsAdmin = () => {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing && state.projects.some(p => p.slug === editing.slug) ? "Edit" : "New"} project</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing && projects.some(p => p.slug === editing.slug) ? "Edit" : "New"} project</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-4">
               <CoverImageField

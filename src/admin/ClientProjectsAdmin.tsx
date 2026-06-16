@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useClientProjects, useSettings } from "@/lib/useData";
 import { useApi } from "@/lib/useApi";
+import { uid } from "@/lib/utils";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronRight, Paperclip, Download, Send, CheckCircle2, FileText, AlarmClock, FileDown } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Paperclip, Download, Send, CheckCircle2, FileText, AlarmClock, FileDown, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -25,24 +26,37 @@ import { exportInvoicePdf, exportProjectSummaryPdf } from "@/lib/pdf";
 const MS_STATUSES: MilestoneStatus[] = ["pending", "in_progress", "review", "done"];
 
 const ClientProjectsAdmin = () => {
-  const { state } = useStudio();
+  const { data: clientProjects = [], isLoading } = useClientProjects("all");
+  const { data: settings } = useSettings();
   const { updateClientProject } = useApi();
-  const [activeId, setActiveId] = useState<string | null>(state.clientProjects[0]?.id ?? null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Set initial active project once data loads
+  const firstProjectId = (clientProjects as any[])[0]?.id ?? null;
+  const resolvedActiveId = activeId ?? firstProjectId;
 
   const active = useMemo(
-    () => state.clientProjects.find((p) => p.id === activeId) ?? null,
-    [state.clientProjects, activeId],
+    () => (clientProjects as any[]).find((p) => p.id === resolvedActiveId) ?? null,
+    [clientProjects, resolvedActiveId],
   );
 
   const updateProject = (id: string, fn: (p: ClientProject) => ClientProject) => {
-    const current = state.clientProjects.find((p) => p.id === id);
+    const current = (clientProjects as any[]).find((p) => p.id === id);
     if (current) updateClientProject(id, fn(current));
   };
 
   const removeProject = (id: string) => {
     updateClientProject(id, { stage: "delivered" } as Partial<ClientProject>);
-    if (activeId === id) setActiveId(null);
+    if (resolvedActiveId === id) setActiveId(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -51,7 +65,7 @@ const ClientProjectsAdmin = () => {
         description="Track active engagements: milestones, messages, and invoices for each client."
       />
 
-      {state.clientProjects.length === 0 ? (
+      {(clientProjects as any[]).length === 0 ? (
         <EmptyState
           title="No active projects"
           description="Convert an accepted proposal into a project from the Proposals page."
@@ -59,11 +73,11 @@ const ClientProjectsAdmin = () => {
       ) : (
         <div className="grid lg:grid-cols-[320px_1fr] gap-5">
           <aside className="surface-card p-3 space-y-1 lg:sticky lg:top-4 lg:self-start max-h-[80vh] overflow-y-auto">
-            {state.clientProjects.map((p) => (
+            {(clientProjects as any[]).map((p) => (
               <button
                 key={p.id}
                 onClick={() => setActiveId(p.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${activeId === p.id ? "bg-secondary" : "hover:bg-secondary/60"}`}
+                className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${resolvedActiveId === p.id ? "bg-secondary" : "hover:bg-secondary/60"}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-sm truncate">{p.title}</span>
@@ -71,7 +85,7 @@ const ClientProjectsAdmin = () => {
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5 truncate">{p.clientName}</div>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className={`text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-full ${stageColor[p.stage]}`}>{p.stage}</span>
+                  <span className={`text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-full ${stageColor[p.stage as ClientProjectStage]}`}>{p.stage}</span>
                   <span className="text-[10px] text-muted-foreground">{milestoneProgress(p.milestones)}%</span>
                 </div>
               </button>
@@ -81,8 +95,8 @@ const ClientProjectsAdmin = () => {
           {active ? (
             <ProjectDetail
               project={active}
-              brand={state.settings.brand}
-              brandEmail={state.settings.contact.email}
+              brand={settings?.brand ?? { studioName: "", tagline: "" }}
+              brandEmail={settings?.contact?.email ?? ""}
               onUpdate={(fn) => updateProject(active.id, fn)}
               onRemove={() => removeProject(active.id)}
             />
@@ -107,7 +121,6 @@ const ProjectDetail = ({ project, brand, brandEmail, onUpdate, onRemove }: {
   const [msMode, setMsMode] = useState<{ open: boolean; ms?: Milestone }>({ open: false });
   const [invMode, setInvMode] = useState<{ open: boolean; inv?: Invoice }>({ open: false });
   const [msg, setMsg] = useState("");
-  
 
   const sendMessage = () => {
     const body = msg.trim();

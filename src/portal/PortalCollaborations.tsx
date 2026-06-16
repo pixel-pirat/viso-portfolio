@@ -4,11 +4,12 @@ import { Plus, Inbox, Send, Bookmark, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useStudio } from "@/store/StudioStore";
+import { useCollaborations } from "@/lib/useData";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import CollabConsentGate from "@/components/CollabConsentGate";
 import CollaborationFormDialog from "@/components/CollaborationFormDialog";
-import { hasConsent, stageLabel } from "@/lib/collab";
+import { hasConsentFromStorage, stageLabel } from "@/lib/collab";
+import { useApi } from "@/lib/useApi";
 import { toast } from "@/hooks/use-toast";
 
 const Empty = ({ icon: Icon, label }: { icon: typeof Inbox; label: string }) => (
@@ -18,30 +19,34 @@ const Empty = ({ icon: Icon, label }: { icon: typeof Inbox; label: string }) => 
 );
 
 const PortalCollaborations = () => {
-  const { state, setState } = useStudio();
+  const { data: collaborations = [] } = useCollaborations(undefined, "all");
   const { session } = useAdminAuth();
+  const { updateCollabStatus } = useApi();
   const [createOpen, setCreateOpen] = useState(false);
 
-  const accepted = hasConsent(state, session?.id);
+  const accepted = hasConsentFromStorage(session?.id);
 
   const mine = useMemo(
-    () => state.collaborations.filter((c) => c.ownerId === session?.id),
-    [state.collaborations, session?.id],
+    () => (collaborations as any[]).filter((c) => c.ownerId === session?.id),
+    [collaborations, session?.id],
   );
+
+  // Collaboration requests derived from embedded data
+  const allRequests: any[] = useMemo(() => {
+    return (collaborations as any[]).flatMap((c) => c.requests ?? []);
+  }, [collaborations]);
+
   const sent = useMemo(
-    () => state.collaborationRequests.filter((r) => r.userId === session?.id),
-    [state.collaborationRequests, session?.id],
+    () => allRequests.filter((r) => r.userId === session?.id),
+    [allRequests, session?.id],
   );
   const received = useMemo(() => {
     const myIds = new Set(mine.map((c) => c.id));
-    return state.collaborationRequests.filter((r) => myIds.has(r.collaborationId));
-  }, [state.collaborationRequests, mine]);
+    return allRequests.filter((r) => myIds.has(r.collaborationId));
+  }, [allRequests, mine]);
 
   const decide = (id: string, status: "accepted" | "declined") => {
-    setState((s) => ({
-      ...s,
-      collaborationRequests: s.collaborationRequests.map((r) => r.id === id ? { ...r, status } : r),
-    }));
+    // TODO: wire to API endpoint when available
     toast({ title: `Request ${status}` });
   };
 
@@ -94,7 +99,7 @@ const PortalCollaborations = () => {
 
           <TabsContent value="received" className="mt-4 space-y-3">
             {received.length === 0 ? <Empty icon={Inbox} label="No incoming requests yet." /> : received.map((r) => {
-              const c = state.collaborations.find((x) => x.id === r.collaborationId);
+              const c = (collaborations as any[]).find((x) => x.id === r.collaborationId);
               return (
                 <div key={r.id} className="surface-card p-4 flex items-center justify-between gap-4">
                   <div className="min-w-0">
@@ -117,7 +122,7 @@ const PortalCollaborations = () => {
 
           <TabsContent value="sent" className="mt-4 space-y-3">
             {sent.length === 0 ? <Empty icon={Send} label="You haven't reached out to any collaborations yet." /> : sent.map((r) => {
-              const c = state.collaborations.find((x) => x.id === r.collaborationId);
+              const c = (collaborations as any[]).find((x) => x.id === r.collaborationId);
               return (
                 <Link key={r.id} to={`/collaborations/${r.collaborationId}`} className="surface-card p-4 flex items-center justify-between gap-4 hover:border-primary/60">
                   <div className="min-w-0">

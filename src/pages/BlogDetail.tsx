@@ -5,7 +5,15 @@ import { usePost } from "@/lib/useData";
 
 const BlogDetail = () => {
   const { slug } = useParams();
-  const { data: post } = usePost(slug ?? "");
+  const { data: post, isLoading } = usePost(slug ?? "");
+
+  if (isLoading) {
+    return (
+      <section className="container-studio py-32 text-center">
+        <h1 className="text-2xl font-display text-muted-foreground animate-pulse">Loading post...</h1>
+      </section>
+    );
+  }
 
   if (!post) {
     return (

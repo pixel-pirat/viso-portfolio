@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "./components/Layout";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { StudioProvider } from "./store/StudioStore";
 import { AdminAuthProvider } from "./admin/AdminAuth";
 import NotificationsBridge from "./components/NotificationsBridge";
 import RemindersScheduler from "./components/RemindersScheduler";
@@ -49,8 +48,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <StudioProvider>
-        <AdminAuthProvider>
+      <AdminAuthProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -105,7 +103,6 @@ const App = () => (
             </BrowserRouter>
           </TooltipProvider>
         </AdminAuthProvider>
-      </StudioProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

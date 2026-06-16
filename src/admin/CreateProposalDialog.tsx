@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useServices } from "@/lib/useData";
 import { useAdminAuth } from "./AdminAuth";
 import { useApi } from "@/lib/useApi";
+import { uid } from "@/lib/utils";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,16 +21,18 @@ type Props = {
 };
 
 const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) => {
-  const { state } = useStudio();
+  const { data: services = [] } = useServices(true);
   const { saveProposal, updateBookingStatus } = useApi();
   const { accounts } = useAdminAuth();
 
   const clients = accounts.filter((a) => a.role === "client");
 
+  const firstServiceSlug = (services as any[])[0]?.slug ?? "";
+
   const [clientId, setClientId] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
-  const [serviceSlug, setServiceSlug] = useState(state.services[0]?.slug ?? "");
+  const [serviceSlug, setServiceSlug] = useState(firstServiceSlug);
   const [tierId, setTierId] = useState("");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -37,8 +40,8 @@ const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) =
   const [price, setPrice] = useState("");
   const [timelineWeeks, setTimelineWeeks] = useState(6);
 
-  const service = state.services.find((s) => s.slug === serviceSlug);
-  const tier = service?.tiers.find((t) => t.id === tierId);
+  const service = (services as any[]).find((s) => s.slug === serviceSlug);
+  const tier = service?.tiers?.find((t: any) => t.id === tierId);
 
   // Reset / hydrate when opened
   useEffect(() => {
@@ -53,15 +56,21 @@ const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) =
       setClientId(initial.clientId ?? "");
       setClientName(initial.clientName ?? "");
       setClientEmail(initial.clientEmail ?? "");
-      setServiceSlug(initial.serviceSlug ?? state.services[0]?.slug ?? "");
+      setServiceSlug(initial.serviceSlug ?? firstServiceSlug);
       setTierId(initial.tierId ?? "");
       setTitle(initial.title ?? "");
       setSummary(initial.summary ?? "");
       setScopeText((initial.scope ?? []).join("\n"));
       setPrice(initial.price ?? "");
       setTimelineWeeks(initial.timelineWeeks ?? 6);
+    } else {
+      // Reset to defaults
+      setServiceSlug(firstServiceSlug);
+      setClientId(""); setClientName(""); setClientEmail("");
+      setTierId(""); setTitle(""); setSummary(""); setScopeText(""); setPrice("");
+      setTimelineWeeks(6);
     }
-  }, [open, booking, initial, state.services]);
+  }, [open, booking, initial, firstServiceSlug]);
 
   // Auto-fill title/summary/scope/price from selected tier
   useEffect(() => {
@@ -138,7 +147,7 @@ const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) =
               <Select value={serviceSlug} onValueChange={(v) => { setServiceSlug(v); setTierId(""); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {state.services.map((s) => <SelectItem key={s.slug} value={s.slug}>{s.title}</SelectItem>)}
+                  {(services as any[]).map((s) => <SelectItem key={s.slug} value={s.slug}>{s.title}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -147,7 +156,7 @@ const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) =
               <Select value={tierId} onValueChange={setTierId}>
                 <SelectTrigger><SelectValue placeholder="Pick tier" /></SelectTrigger>
                 <SelectContent>
-                  {service?.tiers.map((t) => <SelectItem key={t.id} value={t.id}>{t.name} — {t.price}</SelectItem>)}
+                  {service?.tiers?.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name} — {t.price}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

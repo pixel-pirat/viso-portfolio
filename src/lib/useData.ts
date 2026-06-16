@@ -1,127 +1,168 @@
 /**
  * useData — react-query hooks that fetch from the API.
- * These replace direct useStudio() reads on public-facing pages.
- * Admin pages that need write access still use useStudio() + useApi().
+ * These are the single source of truth for business data across public, client, and admin pages.
  */
 import { useQuery } from "@tanstack/react-query";
 import {
   servicesApi, projectsApi, blogApi, heroApi, settingsApi, collaborationsApi,
+  bookingsApi, proposalsApi, clientProjectsApi, appointmentsApi, notificationsApi, usersApi
 } from "@/lib/api";
-import { useStudio } from "@/store/StudioStore";
 
-// Stale time — data is considered fresh for 60 seconds
-const STALE = 60_000;
+const STALE = 30_000; // 30 seconds fresh time
 
 // ─── Services ────────────────────────────────────────────
-export function useServices() {
-  const { state } = useStudio();
+export function useServices(isAdmin = false) {
   return useQuery({
-    queryKey: ["services"],
-    queryFn: () => servicesApi.list() as Promise<typeof state.services>,
+    queryKey: ["services", { isAdmin }],
+    queryFn: () => (isAdmin ? servicesApi.listAll() : servicesApi.list()) as Promise<any[]>,
     staleTime: STALE,
-    initialData: state.services.length > 0 ? state.services : undefined,
   });
 }
 
 export function useService(slug: string) {
-  const { state } = useStudio();
-  const local = state.services.find((s) => s.slug === slug);
   return useQuery({
     queryKey: ["services", slug],
-    queryFn: () => servicesApi.get(slug) as Promise<(typeof state.services)[0]>,
+    queryFn: () => servicesApi.get(slug) as Promise<any>,
     staleTime: STALE,
-    initialData: local,
     enabled: !!slug,
   });
 }
 
 // ─── Projects ────────────────────────────────────────────
-export function useProjects(params?: { category?: string; featured?: boolean }) {
-  const { state } = useStudio();
+export function useProjects(params?: { category?: string; featured?: boolean }, isAdmin = false) {
   return useQuery({
-    queryKey: ["projects", params],
-    queryFn: () => projectsApi.list(params) as Promise<typeof state.projects>,
+    queryKey: ["projects", params, { isAdmin }],
+    queryFn: () => (isAdmin ? projectsApi.listAll() : projectsApi.list(params)) as Promise<any[]>,
     staleTime: STALE,
-    initialData: state.projects.length > 0 ? state.projects : undefined,
   });
 }
 
 export function useProject(slug: string) {
-  const { state } = useStudio();
-  const local = state.projects.find((p) => p.slug === slug);
   return useQuery({
     queryKey: ["projects", slug],
-    queryFn: () => projectsApi.get(slug) as Promise<(typeof state.projects)[0]>,
+    queryFn: () => projectsApi.get(slug) as Promise<any>,
     staleTime: STALE,
-    initialData: local,
     enabled: !!slug,
   });
 }
 
 // ─── Blog ─────────────────────────────────────────────────
-export function usePosts(category?: string) {
-  const { state } = useStudio();
+export function usePosts(category?: string, isAdmin = false) {
   return useQuery({
-    queryKey: ["posts", category],
-    queryFn: () => blogApi.list(category) as Promise<typeof state.posts>,
+    queryKey: ["posts", category, { isAdmin }],
+    queryFn: () => (isAdmin ? blogApi.listAll() : blogApi.list(category)) as Promise<any[]>,
     staleTime: STALE,
-    initialData: state.posts.length > 0 ? state.posts : undefined,
   });
 }
 
 export function usePost(slug: string) {
-  const { state } = useStudio();
-  const local = state.posts.find((p) => p.slug === slug);
   return useQuery({
     queryKey: ["posts", slug],
-    queryFn: () => blogApi.get(slug) as Promise<(typeof state.posts)[0]>,
+    queryFn: () => blogApi.get(slug) as Promise<any>,
     staleTime: STALE,
-    initialData: local,
     enabled: !!slug,
   });
 }
 
 // ─── Hero ─────────────────────────────────────────────────
 export function useHero() {
-  const { state } = useStudio();
   return useQuery({
     queryKey: ["hero"],
-    queryFn: () => heroApi.get() as Promise<{ slides: typeof state.hero.slides; activity: typeof state.hero.activity }>,
+    queryFn: () => heroApi.get() as Promise<{ slides: any[]; activity: any[] }>,
     staleTime: STALE,
-    initialData: state.hero.slides.length > 0 ? state.hero : undefined,
   });
 }
 
 // ─── Settings ─────────────────────────────────────────────
 export function useSettings() {
-  const { state } = useStudio();
   return useQuery({
     queryKey: ["settings"],
-    queryFn: () => settingsApi.get() as Promise<typeof state.settings>,
+    queryFn: () => settingsApi.get() as Promise<any>,
     staleTime: STALE,
-    initialData: state.settings,
   });
 }
 
 // ─── Collaborations ───────────────────────────────────────
-export function useCollaborations(params?: { category?: string; stage?: string }) {
-  const { state } = useStudio();
+export function useCollaborations(params?: { category?: string; stage?: string }, scope: "all" | "mine" | "public" = "public") {
   return useQuery({
-    queryKey: ["collaborations", params],
-    queryFn: () => collaborationsApi.list(params) as Promise<typeof state.collaborations>,
+    queryKey: ["collaborations", params, { scope }],
+    queryFn: (): Promise<any[]> => {
+      if (scope === "all") return collaborationsApi.listAll() as Promise<any[]>;
+      if (scope === "mine") return collaborationsApi.mine() as Promise<any[]>;
+      return collaborationsApi.list(params) as Promise<any[]>;
+    },
     staleTime: STALE,
-    initialData: state.collaborations.length > 0 ? state.collaborations : undefined,
   });
 }
 
 export function useCollaboration(id: string) {
-  const { state } = useStudio();
-  const local = state.collaborations.find((c) => c.id === id);
   return useQuery({
     queryKey: ["collaborations", id],
-    queryFn: () => collaborationsApi.get(id) as Promise<(typeof state.collaborations)[0]>,
+    queryFn: () => collaborationsApi.get(id) as Promise<any>,
     staleTime: STALE,
-    initialData: local,
     enabled: !!id,
+  });
+}
+
+export function useCollabMyRequests(id: string) {
+  return useQuery({
+    queryKey: ["collaborations", id, "my-requests"],
+    queryFn: () => collaborationsApi.getMyRequests(id) as Promise<any[]>,
+    staleTime: STALE,
+    enabled: !!id,
+  });
+}
+
+// ─── Bookings ─────────────────────────────────────────────
+export function useBookings(scope: "all" | "mine" = "all") {
+  return useQuery({
+    queryKey: ["bookings", { scope }],
+    queryFn: () => (scope === "all" ? bookingsApi.list() : bookingsApi.mine()) as Promise<any[]>,
+    staleTime: STALE,
+  });
+}
+
+// ─── Proposals ────────────────────────────────────────────
+export function useProposals(scope: "all" | "mine" = "all") {
+  return useQuery({
+    queryKey: ["proposals", { scope }],
+    queryFn: () => (scope === "all" ? proposalsApi.list() : proposalsApi.mine()) as Promise<any[]>,
+    staleTime: STALE,
+  });
+}
+
+// ─── Client Projects ──────────────────────────────────────
+export function useClientProjects(scope: "all" | "mine" = "all") {
+  return useQuery({
+    queryKey: ["clientProjects", { scope }],
+    queryFn: () => (scope === "all" ? clientProjectsApi.list() : clientProjectsApi.mine()) as Promise<any[]>,
+    staleTime: STALE,
+  });
+}
+
+// ─── Appointments ─────────────────────────────────────────
+export function useAppointments(scope: "all" | "mine" = "all") {
+  return useQuery({
+    queryKey: ["appointments", { scope }],
+    queryFn: () => (scope === "all" ? appointmentsApi.list() : appointmentsApi.mine()) as Promise<any[]>,
+    staleTime: STALE,
+  });
+}
+
+// ─── Notifications ────────────────────────────────────────
+export function useNotifications() {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => notificationsApi.list() as Promise<any[]>,
+    staleTime: STALE,
+  });
+}
+
+// ─── Users (admin only) ───────────────────────────────────
+export function useUsers() {
+  return useQuery({
+    queryKey: ["users"],
+    queryFn: () => usersApi.list() as Promise<any[]>,
+    staleTime: STALE,
   });
 }

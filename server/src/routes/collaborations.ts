@@ -173,6 +173,22 @@ router.get("/:id/requests", requireAuth, async (req: Request, res: Response, nex
   }
 });
 
+// GET /api/collaborations/:id/my-requests (auth — own requests only)
+router.get("/:id/my-requests", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rows = await query(
+      `SELECT id, user_id, user_name, user_email, kind, role, message, status, created_at
+       FROM collaboration_requests
+       WHERE collaboration_id=$1 AND user_id=$2
+       ORDER BY created_at DESC`,
+      [req.params.id, req.user!.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // PATCH /api/collaborations/:id/requests/:rid (owner or admin)
 router.patch("/:id/requests/:rid", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {

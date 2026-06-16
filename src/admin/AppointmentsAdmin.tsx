@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { useStudio } from "@/store/StudioStore";
-import { useAdminAuth } from "./AdminAuth";
+import { useAppointments, useServices } from "@/lib/useData";
 import { useApi } from "@/lib/useApi";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle2, XCircle, CalendarClock, Pencil } from "lucide-react";
+import { CheckCircle2, XCircle, CalendarClock, Loader2 } from "lucide-react";
 import type { Appointment, AppointmentStatus } from "@/store/types";
 import { realtime } from "@/lib/realtime";
 import { toast } from "sonner";
@@ -23,13 +22,14 @@ const statusColor: Record<AppointmentStatus, string> = {
 };
 
 const AppointmentsAdmin = () => {
-  const { state } = useStudio();
+  const { data: appointments = [], isLoading } = useAppointments("all");
+  const { data: services = [] } = useServices(true);
   const { updateAppointment } = useApi();
   const [reschedule, setReschedule] = useState<Appointment | null>(null);
 
   const upcoming = useMemo(
-    () => [...state.appointments].sort((a, b) => +new Date(`${a.date}T${a.time}`) - +new Date(`${b.date}T${b.time}`)),
-    [state.appointments],
+    () => [...appointments].sort((a: any, b: any) => +new Date(`${a.date}T${a.time}`) - +new Date(`${b.date}T${b.time}`)),
+    [appointments],
   );
 
   const update = (id: string, patch: Partial<Appointment>) => updateAppointment(id, patch);
@@ -48,6 +48,14 @@ const AppointmentsAdmin = () => {
     toast.success(`Marked as ${status}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -59,11 +67,11 @@ const AppointmentsAdmin = () => {
         <EmptyState title="No appointments yet" description="Client appointment requests will appear here." />
       ) : (
         <div className="surface-card p-2 divide-y divide-border">
-          {upcoming.map((a) => (
+          {upcoming.map((a: any) => (
             <div key={a.id} className="p-4 flex flex-wrap items-start gap-4 justify-between">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${statusColor[a.status]}`}>{a.status}</span>
+                  <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${statusColor[a.status as AppointmentStatus]}`}>{a.status}</span>
                   <span className="font-medium text-sm">{a.clientName}</span>
                   <span className="text-xs text-muted-foreground">{a.clientEmail}</span>
                 </div>
@@ -72,7 +80,7 @@ const AppointmentsAdmin = () => {
                 </div>
                 {a.serviceSlug && (
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    Service: {state.services.find((s) => s.slug === a.serviceSlug)?.title ?? a.serviceSlug}
+                    Service: {(services as any[]).find((s) => s.slug === a.serviceSlug)?.title ?? a.serviceSlug}
                   </div>
                 )}
                 {a.notes && <p className="text-sm text-muted-foreground mt-2 max-w-2xl">{a.notes}</p>}

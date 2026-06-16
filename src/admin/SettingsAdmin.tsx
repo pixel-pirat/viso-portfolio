@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useStudio } from "@/store/StudioStore";
+import { useSettings } from "@/lib/useData";
 import { useApi } from "@/lib/useApi";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
@@ -7,34 +7,46 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { RotateCcw, Upload, Trash2, Save } from "lucide-react";
+import { RotateCcw, Upload, Trash2, Save, Loader2 } from "lucide-react";
 import { readImageDownscaled, AVATAR_MAX_DIM } from "@/lib/uploads";
 
 const SettingsAdmin = () => {
-  const { state, setState, reset } = useStudio();
+  const { data: settingsData, isLoading } = useSettings();
   const { saveSettings } = useApi();
-  const s = state.settings;
 
   // Local draft — only pushed to DB on Save
-  const [draft, setDraft] = useState(s);
-  const isDirty = JSON.stringify(draft) !== JSON.stringify(s);
+  const [draft, setDraft] = useState<any>(null);
 
-  const onContact = (patch: Partial<typeof s.contact>) =>
-    setDraft((d) => ({ ...d, contact: { ...d.contact, ...patch } }));
+  // Sync draft from fetched data (first load)
+  const s = draft ?? settingsData ?? {};
 
-  const onSocial = (key: keyof typeof s.contact.socials, value: string) =>
-    setDraft((d) => ({ ...d, contact: { ...d.contact, socials: { ...d.contact.socials, [key]: value } } }));
+  const isDirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(settingsData);
 
-  const onDev = (patch: Partial<typeof s.developer>) =>
-    setDraft((d) => ({ ...d, developer: { ...d.developer, ...patch } }));
+  const onContact = (patch: any) =>
+    setDraft((d: any) => ({ ...(d ?? s), contact: { ...(d ?? s).contact, ...patch } }));
 
-  const onBrand = (patch: Partial<typeof s.brand>) =>
-    setDraft((d) => ({ ...d, brand: { ...d.brand, ...patch } }));
+  const onSocial = (key: string, value: string) =>
+    setDraft((d: any) => ({ ...(d ?? s), contact: { ...(d ?? s).contact, socials: { ...(d ?? s).contact?.socials, [key]: value } } }));
+
+  const onDev = (patch: any) =>
+    setDraft((d: any) => ({ ...(d ?? s), developer: { ...(d ?? s).developer, ...patch } }));
+
+  const onBrand = (patch: any) =>
+    setDraft((d: any) => ({ ...(d ?? s), brand: { ...(d ?? s).brand, ...patch } }));
 
   const handleSave = async () => {
+    if (!draft) return;
     await saveSettings(draft);
     toast({ title: "Settings saved" });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -42,8 +54,8 @@ const SettingsAdmin = () => {
         title="Settings"
         description="Manage contact details, developer profile, and brand info shown across the site."
         actions={
-          <Button variant="outline" onClick={() => { if (confirm("Reset all admin data to defaults?")) { reset(); toast({ title: "Reset to defaults" }); } }}>
-            <RotateCcw size={14} /> Reset all data
+          <Button variant="outline" onClick={() => { if (confirm("Reset draft to server values?")) { setDraft(null); toast({ title: "Draft reset" }); } }}>
+            <RotateCcw size={14} /> Reset draft
           </Button>
         }
       />
@@ -51,36 +63,36 @@ const SettingsAdmin = () => {
       <div className="grid lg:grid-cols-2 gap-5">
         <section className="surface-card p-6 space-y-4">
           <h2 className="font-display text-lg font-semibold">Brand</h2>
-          <div><Label>Brand name</Label><Input value={draft.brand.studioName} onChange={(e) => onBrand({ studioName: e.target.value })} /></div>
-          <div><Label>Legal name (used on documents)</Label><Input value={draft.brand.legalName} onChange={(e) => onBrand({ legalName: e.target.value })} /></div>
-          <div><Label>Tagline</Label><Input value={draft.brand.tagline} onChange={(e) => onBrand({ tagline: e.target.value })} /></div>
+          <div><Label>Brand name</Label><Input value={s.brand?.studioName ?? ""} onChange={(e) => onBrand({ studioName: e.target.value })} /></div>
+          <div><Label>Legal name (used on documents)</Label><Input value={s.brand?.legalName ?? ""} onChange={(e) => onBrand({ legalName: e.target.value })} /></div>
+          <div><Label>Tagline</Label><Input value={s.brand?.tagline ?? ""} onChange={(e) => onBrand({ tagline: e.target.value })} /></div>
         </section>
 
         <section className="surface-card p-6 space-y-4">
           <h2 className="font-display text-lg font-semibold">Contact</h2>
-          <div><Label>Email</Label><Input type="email" value={draft.contact.email} onChange={(e) => onContact({ email: e.target.value })} /></div>
-          <div><Label>Location</Label><Input value={draft.contact.location} onChange={(e) => onContact({ location: e.target.value })} /></div>
+          <div><Label>Email</Label><Input type="email" value={s.contact?.email ?? ""} onChange={(e) => onContact({ email: e.target.value })} /></div>
+          <div><Label>Location</Label><Input value={s.contact?.location ?? ""} onChange={(e) => onContact({ location: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Twitter</Label><Input value={draft.contact.socials.twitter} onChange={(e) => onSocial("twitter", e.target.value)} /></div>
-            <div><Label>Instagram</Label><Input value={draft.contact.socials.instagram} onChange={(e) => onSocial("instagram", e.target.value)} /></div>
-            <div><Label>LinkedIn</Label><Input value={draft.contact.socials.linkedin} onChange={(e) => onSocial("linkedin", e.target.value)} /></div>
-            <div><Label>GitHub</Label><Input value={draft.contact.socials.github} onChange={(e) => onSocial("github", e.target.value)} /></div>
+            <div><Label>Twitter</Label><Input value={s.contact?.socials?.twitter ?? ""} onChange={(e) => onSocial("twitter", e.target.value)} /></div>
+            <div><Label>Instagram</Label><Input value={s.contact?.socials?.instagram ?? ""} onChange={(e) => onSocial("instagram", e.target.value)} /></div>
+            <div><Label>LinkedIn</Label><Input value={s.contact?.socials?.linkedin ?? ""} onChange={(e) => onSocial("linkedin", e.target.value)} /></div>
+            <div><Label>GitHub</Label><Input value={s.contact?.socials?.github ?? ""} onChange={(e) => onSocial("github", e.target.value)} /></div>
           </div>
         </section>
 
         <section className="surface-card p-6 space-y-4 lg:col-span-2">
           <h2 className="font-display text-lg font-semibold">Developer profile</h2>
           <AvatarField
-            value={draft.developer.avatarUrl}
-            name={draft.developer.name}
+            value={s.developer?.avatarUrl ?? ""}
+            name={s.developer?.name ?? ""}
             onChange={(url) => onDev({ avatarUrl: url })}
           />
           <div className="grid md:grid-cols-2 gap-3">
-            <div><Label>Name</Label><Input value={draft.developer.name} onChange={(e) => onDev({ name: e.target.value })} /></div>
-            <div><Label>Title</Label><Input value={draft.developer.title} onChange={(e) => onDev({ title: e.target.value })} /></div>
-            <div><Label>Years experience</Label><Input type="number" value={draft.developer.yearsExperience} onChange={(e) => onDev({ yearsExperience: parseInt(e.target.value || "0") })} /></div>
-            <div><Label>Location</Label><Input value={draft.developer.location} onChange={(e) => onDev({ location: e.target.value })} /></div>
-            <div className="md:col-span-2"><Label>Bio</Label><Textarea rows={4} value={draft.developer.bio} onChange={(e) => onDev({ bio: e.target.value })} /></div>
+            <div><Label>Name</Label><Input value={s.developer?.name ?? ""} onChange={(e) => onDev({ name: e.target.value })} /></div>
+            <div><Label>Title</Label><Input value={s.developer?.title ?? ""} onChange={(e) => onDev({ title: e.target.value })} /></div>
+            <div><Label>Years experience</Label><Input type="number" value={s.developer?.yearsExperience ?? 0} onChange={(e) => onDev({ yearsExperience: parseInt(e.target.value || "0") })} /></div>
+            <div><Label>Location</Label><Input value={s.developer?.location ?? ""} onChange={(e) => onDev({ location: e.target.value })} /></div>
+            <div className="md:col-span-2"><Label>Bio</Label><Textarea rows={4} value={s.developer?.bio ?? ""} onChange={(e) => onDev({ bio: e.target.value })} /></div>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="hero" onClick={handleSave} disabled={!isDirty}>
@@ -137,7 +149,7 @@ const AvatarField = ({
             </Button>
           )}
         </div>
-        <p className="text-[11px] text-muted-foreground">Resized to {AVATAR_MAX_DIM}px and stored locally.</p>
+        <p className="text-[11px] text-muted-foreground">Resized to {AVATAR_MAX_DIM}px and stored as profile photo.</p>
       </div>
     </div>
   );

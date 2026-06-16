@@ -1,6 +1,7 @@
 import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
-import { useStudio } from "@/store/StudioStore";
+import { useSettings } from "@/lib/useData";
+import { Loader2 } from "lucide-react";
 
 const skills = [
   "React", "TypeScript", "Next.js", "Tailwind", "Node.js",
@@ -9,8 +10,17 @@ const skills = [
 ];
 
 const About = () => {
-  const { state } = useStudio();
-  const dev = state.settings.developer;
+  const { data: settings, isLoading } = useSettings();
+
+  if (isLoading || !settings) {
+    return (
+      <div className="min-h-[80vh] grid place-items-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={40} />
+      </div>
+    );
+  }
+
+  const dev = settings.developer;
 
   return (
     <>

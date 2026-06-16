@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
+import { uid } from "@/lib/utils";
+import { useUsers } from "@/lib/useData";
 import { useApi } from "@/lib/useApi";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import type { AdminUser } from "@/store/types";
 const ROLES: AdminUser["role"][] = ["admin", "editor", "viewer"];
 
 const UsersAdmin = () => {
-  const { state } = useStudio();
+  const { data: users = [], isLoading } = useUsers();
   const { saveUser, deleteUser } = useApi();
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [open, setOpen] = useState(false);
@@ -24,7 +25,7 @@ const UsersAdmin = () => {
   const save = async () => {
     if (!editing) return;
     if (!editing.name.trim() || !editing.email.trim()) return toast({ title: "Name & email required", variant: "destructive" });
-    const isNew = !state.users.find((u) => u.id === editing.id);
+    const isNew = !(users as any[]).find((u) => u.id === editing.id);
     await saveUser(editing, isNew);
     toast({ title: "User saved" });
     setOpen(false);
@@ -32,11 +33,19 @@ const UsersAdmin = () => {
 
   const remove = (id: string) => deleteUser(id);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader
         title="Users"
-        description="Mock team list for demo. Roles: admin · editor · viewer."
+        description="Manage team members and their roles. Roles: admin · editor · viewer."
         actions={<Button variant="hero" onClick={() => { setEditing(newUser()); setOpen(true); }}><Plus size={16} /> Invite user</Button>}
       />
 
@@ -52,7 +61,7 @@ const UsersAdmin = () => {
             </tr>
           </thead>
           <tbody>
-            {state.users.map((u) => (
+            {(users as any[]).map((u) => (
               <tr key={u.id} className="border-t border-border">
                 <td className="px-4 py-3 font-medium">{u.name}</td>
                 <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
@@ -64,6 +73,9 @@ const UsersAdmin = () => {
                 </td>
               </tr>
             ))}
+            {(users as any[]).length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useClientProjects } from "@/lib/useData";
+import { useApi } from "@/lib/useApi";
 import { isOverdue, shouldAutoRemind } from "@/lib/lifecycle";
 import { realtime } from "@/lib/realtime";
+import { uid } from "@/lib/utils";
 
 /**
  * Mock background scheduler.
@@ -11,17 +13,19 @@ import { realtime } from "@/lib/realtime";
  *    and append a reminder entry. Real impl would be a server cron.
  */
 const RemindersScheduler = () => {
-  const { state, setState } = useStudio();
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const { data: clientProjects = [] } = useClientProjects("all");
+  const { updateClientProject } = useApi();
+  const projectsRef = useRef(clientProjects);
+  projectsRef.current = clientProjects;
 
   useEffect(() => {
     const tick = () => {
-      const s = stateRef.current;
-      let mutated = false;
+      const projects = projectsRef.current as any[];
       const now = Date.now();
-      const nextProjects = s.clientProjects.map((p) => {
-        const nextInvoices = p.invoices.map((inv) => {
+
+      for (const p of projects) {
+        let mutated = false;
+        const nextInvoices = p.invoices.map((inv: any) => {
           let next = inv;
           if (inv.status === "sent" && isOverdue(inv, now)) {
             next = { ...next, status: "overdue" };
@@ -48,11 +52,10 @@ const RemindersScheduler = () => {
           }
           return next;
         });
-        return { ...p, invoices: nextInvoices };
-      });
 
-      if (mutated) {
-        setState((cur) => ({ ...cur, clientProjects: nextProjects }));
+        if (mutated) {
+          updateClientProject(p.id, { ...p, invoices: nextInvoices });
+        }
       }
     };
 

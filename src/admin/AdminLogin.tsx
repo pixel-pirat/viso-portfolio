@@ -8,10 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 
 const AdminLogin = () => {
-  const { login, legacyLogin, signup } = useAdminAuth();
-
-  // Legacy quick gate
-  const [pw, setPw] = useState("");
+  const { login, signup } = useAdminAuth();
 
   // Email/password
   const [email, setEmail] = useState("");
@@ -22,26 +19,22 @@ const AdminLogin = () => {
   const [sEmail, setSEmail] = useState("");
   const [sPw, setSPw] = useState("");
 
-  const onLegacy = (e: React.FormEvent) => {
+  const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!legacyLogin(pw)) {
-      toast({ title: "Wrong password", description: "Try again.", variant: "destructive" });
+    const r = await login(email, password);
+    if (r.ok === false) {
+      toast({ title: "Sign-in failed", description: (r as any).error, variant: "destructive" });
     }
   };
 
-  const onLogin = (e: React.FormEvent) => {
+  const onSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const r = login(email, password);
-    if (!r.ok) toast({ title: "Sign-in failed", description: (r as { error: string }).error, variant: "destructive" });
-  };
-
-  const onSignup = (e: React.FormEvent) => {
-    e.preventDefault();
-    // First account becomes admin so the user can actually manage things; subsequent ones are clients.
-    const role = JSON.parse(localStorage.getItem("studio:admin:accounts") || "[]").length === 0 ? "admin" : "client";
-    const r = signup({ name: sName, email: sEmail, password: sPw, role });
-    if (!r.ok) toast({ title: "Signup failed", description: (r as { error: string }).error, variant: "destructive" });
-    else toast({ title: "Account created", description: `You're signed in as ${role}.` });
+    const r = await signup({ name: sName, email: sEmail, password: sPw });
+    if (r.ok === false) {
+      toast({ title: "Signup failed", description: (r as any).error, variant: "destructive" });
+    } else {
+      toast({ title: "Account created", description: "You are signed in." });
+    }
   };
 
   return (
@@ -53,15 +46,14 @@ const AdminLogin = () => {
           </span>
           <div>
             <h1 className="font-display text-xl font-bold">Admin access</h1>
-            <p className="text-xs text-muted-foreground">Demo gate — frontend mock auth.</p>
+            <p className="text-xs text-muted-foreground">Database-backed authentication</p>
           </div>
         </div>
 
         <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login"><KeyRound size={12} className="mr-1" /> Login</TabsTrigger>
             <TabsTrigger value="signup"><UserPlus size={12} className="mr-1" /> Sign up</TabsTrigger>
-            <TabsTrigger value="quick">Quick</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login">
@@ -92,19 +84,7 @@ const AdminLogin = () => {
                 <Label htmlFor="sp">Password</Label>
                 <Input id="sp" type="password" value={sPw} onChange={(e) => setSPw(e.target.value)} required minLength={6} />
               </div>
-              <Button type="submit" variant="hero" className="w-full">Create admin account</Button>
-              <p className="text-[11px] text-muted-foreground">Stored in this browser only.</p>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="quick">
-            <form onSubmit={onLegacy} className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="pw">Master password</Label>
-                <Input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus required />
-                <p className="text-[11px] text-muted-foreground">Hint: <code>studio2026</code></p>
-              </div>
-              <Button type="submit" variant="outline" className="w-full">Enter admin</Button>
+              <Button type="submit" variant="hero" className="w-full">Create account</Button>
             </form>
           </TabsContent>
         </Tabs>

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
-import { useStudio } from "@/store/StudioStore";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useApi } from "@/lib/useApi";
+import { usePosts } from "@/lib/useData";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,15 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import type { BlogPost } from "@/store/types";
 
-const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
 const empty = (): BlogPost => ({
   slug: "", title: "", excerpt: "", date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   category: "Design", readTime: "5 min", content: [""], isPublished: true,
 });
 
 const BlogAdmin = () => {
-  const { state } = useStudio();
+  const { data: posts = [], isLoading } = usePosts(undefined, true);
   const { savePost, togglePostPublish, deletePost } = useApi();
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [open, setOpen] = useState(false);
@@ -31,7 +29,7 @@ const BlogAdmin = () => {
   const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) return toast({ title: "Title required", variant: "destructive" });
-    const isNew = !state.posts.find((x) => x.slug === (editing.slug || editing.title));
+    const isNew = !posts.find((x) => x.slug === (editing.slug || editing.title));
     await savePost(editing, isNew);
     toast({ title: "Post saved" });
     setOpen(false);
@@ -39,6 +37,14 @@ const BlogAdmin = () => {
 
   const toggle = (slug: string, current: boolean) => togglePostPublish(slug, !current);
   const remove = async (slug: string) => { await deletePost(slug); toast({ title: "Post deleted" }); };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[50vh] grid place-items-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -48,9 +54,9 @@ const BlogAdmin = () => {
         actions={<Button variant="hero" onClick={openNew}><Plus size={16} /> New post</Button>}
       />
 
-      {state.posts.length === 0 ? <EmptyState title="No posts yet" /> : (
+      {posts.length === 0 ? <EmptyState title="No posts yet" /> : (
         <div className="space-y-3">
-          {state.posts.map((p) => (
+          {posts.map((p) => (
             <div key={p.slug} className="surface-card p-5 flex items-start justify-between gap-4 flex-wrap">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

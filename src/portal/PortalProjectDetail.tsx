@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useClientProjects, useSettings } from "@/lib/useData";
+import { useApi } from "@/lib/useApi";
+import { uid } from "@/lib/utils";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, Download, FileText, Paperclip, CheckCircle2, FileDown } from "lucide-react";
+import { ArrowLeft, Send, Download, FileText, Paperclip, CheckCircle2, FileDown, Loader2 } from "lucide-react";
 import { stageColor, stageLabel, milestoneProgress, STAGES } from "@/lib/lifecycle";
 import { downloadDataUrl, fileToAttachment } from "@/lib/uploads";
 import { toast } from "@/hooks/use-toast";
@@ -15,24 +17,19 @@ import type { ClientProject } from "@/store/types";
 const PortalProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { state, setState } = useStudio();
+  const { data: clientProjects = [], isLoading } = useClientProjects("mine");
+  const { data: settings } = useSettings();
+  const { updateClientProject } = useApi();
   const { session } = useAdminAuth();
   const [msg, setMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const project = state.clientProjects.find((p) => p.id === id);
+  const project = (clientProjects as any[]).find((p) => p.id === id);
 
-  if (!project) {
-    return (
-      <div className="surface-card p-10 text-center">
-        <p className="text-muted-foreground">Project not found.</p>
-        <Button variant="hero" className="mt-4" onClick={() => navigate("/portal/projects")}>Back to projects</Button>
-      </div>
-    );
-  }
-
-  const update = (fn: (p: ClientProject) => ClientProject) =>
-    setState((s) => ({ ...s, clientProjects: s.clientProjects.map((p) => p.id === project.id ? fn(p) : p) }));
+  const update = (fn: (p: ClientProject) => ClientProject) => {
+    if (!project) return;
+    updateClientProject(project.id, fn(project));
+  };
 
   const sendMessage = () => {
     const body = msg.trim();
@@ -64,7 +61,6 @@ const PortalProjectDetail = () => {
       try { return await fileToAttachment(f); } catch (e) { toast({ title: "Skipped", description: (e as Error).message, variant: "destructive" }); return null; }
     }));
     const valid = ats.filter(Boolean) as NonNullable<typeof ats[number]>[];
-    // Attach to first non-done milestone as a "client upload" or new generic milestone bucket
     update((p) => {
       const target = p.milestones.find((m) => m.status !== "done");
       if (target) {
@@ -76,11 +72,12 @@ const PortalProjectDetail = () => {
   };
 
   const payInvoice = (invId: string) => {
+    if (!project) return;
     update((p) => ({
       ...p,
       invoices: p.invoices.map((i) => i.id === invId ? { ...i, status: "paid", paidAt: new Date().toISOString() } : i),
     }));
-    const inv = project.invoices.find((i) => i.id === invId);
+    const inv = project.invoices.find((i: any) => i.id === invId);
     realtime.publish({
       kind: "invoice",
       title: `Invoice ${inv?.number ?? ""} paid`,
@@ -91,7 +88,29 @@ const PortalProjectDetail = () => {
     toast({ title: "Payment recorded", description: "This is a mock payment — no real charge made." });
   };
 
-  const brand = { studioName: state.settings.brand.studioName, legalName: state.settings.brand.legalName, tagline: state.settings.brand.tagline, email: state.settings.contact.email };
+  const brand = {
+    studioName: settings?.brand?.studioName ?? "",
+    legalName: settings?.brand?.legalName,
+    tagline: settings?.brand?.tagline ?? "",
+    email: settings?.contact?.email ?? "",
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="surface-card p-10 text-center">
+        <p className="text-muted-foreground">Project not found.</p>
+        <Button variant="hero" className="mt-4" onClick={() => navigate("/portal/projects")}>Back to projects</Button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -133,7 +152,7 @@ const PortalProjectDetail = () => {
         <div className="surface-card p-6">
           <h2 className="font-display text-lg font-semibold mb-4">Milestones</h2>
           <ul className="space-y-3">
-            {project.milestones.map((m) => (
+            {project.milestones.map((m: any) => (
               <li key={m.id} className="rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium text-sm">{m.title}</span>
@@ -142,7 +161,7 @@ const PortalProjectDetail = () => {
                 {m.description && <p className="text-xs text-muted-foreground mt-1">{m.description}</p>}
                 {(m.deliverables ?? []).length > 0 && (
                   <ul className="mt-2 space-y-1">
-                    {m.deliverables!.map((a) => (
+                    {m.deliverables!.map((a: any) => (
                       <li key={a.id} className="flex items-center justify-between gap-2 text-xs rounded-md bg-background border border-border px-2 py-1">
                         <span className="flex items-center gap-1.5 truncate"><FileText size={11} /> {a.name}</span>
                         <button onClick={() => downloadDataUrl(a.dataUrl, a.name)} className="text-muted-foreground hover:text-foreground"><Download size={12} /></button>
@@ -169,7 +188,7 @@ const PortalProjectDetail = () => {
             <p className="text-sm text-muted-foreground">No invoices yet.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {project.invoices.map((inv) => (
+              {project.invoices.map((inv: any) => (
                 <li key={inv.id} className="py-3 flex items-center justify-between gap-3 flex-wrap">
                   <div>
                     <div className="font-medium text-sm">{inv.number} — {inv.description}</div>
@@ -203,7 +222,7 @@ const PortalProjectDetail = () => {
       <div className="surface-card p-6 mt-5">
         <h2 className="font-display text-lg font-semibold mb-4">Messages</h2>
         <ul className="space-y-3 max-h-96 overflow-y-auto pr-1">
-          {project.messages.map((m) => (
+          {project.messages.map((m: any) => (
             <li key={m.id} className={`flex ${m.authorRole === "client" ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-md rounded-2xl px-4 py-2.5 text-sm ${m.authorRole === "client" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"}`}>
                 <div className="text-[10px] uppercase tracking-widest opacity-70 mb-1">{m.authorName}</div>

@@ -10,8 +10,16 @@ import type { ServiceTier } from "@/store/types";
 
 const ServiceDetail = () => {
   const { slug } = useParams();
-  const { data: service } = useService(slug ?? "");
+  const { data: service, isLoading } = useService(slug ?? "");
   const [bookingTier, setBookingTier] = useState<ServiceTier | null>(null);
+
+  if (isLoading) {
+    return (
+      <section className="container-studio py-32 text-center">
+        <h1 className="text-2xl font-display text-muted-foreground animate-pulse">Loading service...</h1>
+      </section>
+    );
+  }
 
   if (!service) {
     return (

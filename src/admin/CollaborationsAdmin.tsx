@@ -1,27 +1,43 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Flag, EyeOff, Eye, Trash2, ShieldAlert } from "lucide-react";
+import { Flag, EyeOff, Eye, Trash2, ShieldAlert, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useStudio } from "@/store/StudioStore";
+import { useCollaborations } from "@/lib/useData";
 import { useApi } from "@/lib/useApi";
 import { stageLabel, visibilityLabel } from "@/lib/collab";
 import { toast } from "@/hooks/use-toast";
 
 const CollaborationsAdmin = () => {
-  const { state } = useStudio();
+  const { data: collaborations = [], isLoading } = useCollaborations(undefined, "all");
   const { updateCollabStatus, resolveReport: apiResolveReport } = useApi();
   const [filter, setFilter] = useState<"all" | "active" | "flagged" | "removed">("all");
 
-  const collabs = useMemo(() => {
-    const flagged = new Set(state.collaborationReports.filter((r) => r.status === "open").map((r) => r.collaborationId));
-    return state.collaborations.map((c) => ({ ...c, hasReport: flagged.has(c.id) }))
-      .filter((c) => filter === "all" ? true : filter === "flagged" ? c.hasReport : c.status === filter);
-  }, [state.collaborations, state.collaborationReports, filter]);
+  // Derive reports from collaborations data (if reports are embedded)
+  // For now treat reports as a separate field or empty array
+  const reports: any[] = useMemo(() => {
+    return (collaborations as any[]).flatMap((c) => c.reports ?? []);
+  }, [collaborations]);
 
-  const reports = state.collaborationReports;
+  const collabs = useMemo(() => {
+    const flaggedIds = new Set(
+      reports.filter((r) => r.status === "open").map((r) => r.collaborationId)
+    );
+    return (collaborations as any[])
+      .map((c) => ({ ...c, hasReport: flaggedIds.has(c.id) }))
+      .filter((c) =>
+        filter === "all" ? true
+        : filter === "flagged" ? c.hasReport
+        : c.status === filter
+      );
+  }, [collaborations, reports, filter]);
+
+  // Separate collaboration requests from the data
+  const collaborationRequests: any[] = useMemo(() => {
+    return (collaborations as any[]).flatMap((c) => c.requests ?? []);
+  }, [collaborations]);
 
   const setStatus = (id: string, status: "active" | "flagged" | "removed") => {
     updateCollabStatus(id, status);
@@ -32,6 +48,14 @@ const CollaborationsAdmin = () => {
     apiResolveReport(id, status);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -41,9 +65,9 @@ const CollaborationsAdmin = () => {
 
       <Tabs defaultValue="projects">
         <TabsList>
-          <TabsTrigger value="projects">Projects ({state.collaborations.length})</TabsTrigger>
+          <TabsTrigger value="projects">Projects ({(collaborations as any[]).length})</TabsTrigger>
           <TabsTrigger value="reports">Reports ({reports.filter((r) => r.status === "open").length})</TabsTrigger>
-          <TabsTrigger value="requests">Requests ({state.collaborationRequests.length})</TabsTrigger>
+          <TabsTrigger value="requests">Requests ({collaborationRequests.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projects" className="space-y-4 mt-4">
@@ -92,7 +116,7 @@ const CollaborationsAdmin = () => {
           {reports.length === 0 ? (
             <div className="surface-card p-10 text-center text-sm text-muted-foreground">No reports yet.</div>
           ) : reports.map((r) => {
-            const c = state.collaborations.find((x) => x.id === r.collaborationId);
+            const c = (collaborations as any[]).find((x) => x.id === r.collaborationId);
             return (
               <div key={r.id} className="surface-card p-4">
                 <div className="flex items-center justify-between gap-3 mb-2">
@@ -117,10 +141,10 @@ const CollaborationsAdmin = () => {
         </TabsContent>
 
         <TabsContent value="requests" className="space-y-3 mt-4">
-          {state.collaborationRequests.length === 0 ? (
+          {collaborationRequests.length === 0 ? (
             <div className="surface-card p-10 text-center text-sm text-muted-foreground">No collaboration requests yet.</div>
-          ) : state.collaborationRequests.map((r) => {
-            const c = state.collaborations.find((x) => x.id === r.collaborationId);
+          ) : collaborationRequests.map((r) => {
+            const c = (collaborations as any[]).find((x) => x.id === r.collaborationId);
             return (
               <div key={r.id} className="surface-card p-4 text-sm">
                 <div className="flex items-center justify-between gap-3 mb-1">

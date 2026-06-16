@@ -2,13 +2,13 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Briefcase, Wrench, BookOpen, Calendar, Users,
   BarChart3, Settings as SettingsIcon, Sparkles, LogOut, ExternalLink,
-  FileText, FolderKanban, CalendarDays, Network, DatabaseZap,
+  FileText, FolderKanban, CalendarDays, Network, DatabaseZap, Loader2
 } from "lucide-react";
 import { useAdminAuth } from "./AdminAuth";
 import AdminLogin from "./AdminLogin";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useStudio } from "@/store/StudioStore";
+import { useSettings } from "@/lib/useData";
 import NotificationBell from "@/components/NotificationBell";
 
 const items = [
@@ -29,9 +29,17 @@ const items = [
 ];
 
 const AdminLayout = () => {
-  const { isAuthed, isAdmin, logout, session } = useAdminAuth();
-  const { state } = useStudio();
+  const { isAuthed, isAdmin, logout, session, loading } = useAdminAuth();
+  const { data: settings } = useSettings();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   if (!isAuthed) return <AdminLogin />;
   if (!isAdmin) {
@@ -49,9 +57,9 @@ const AdminLayout = () => {
     );
   }
 
-  const dev = state.settings.developer;
-  const displayName = session?.name || dev.name;
-  const initials = displayName.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A";
+  const dev = settings?.developer ?? {};
+  const displayName = session?.name || (dev as any).name || "Admin";
+  const initials = displayName.split(/\s+/).map((s: string) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "A";
 
   return (
     <div className="min-h-screen bg-background grid lg:grid-cols-[260px_1fr]">
@@ -91,8 +99,8 @@ const AdminLayout = () => {
             className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-secondary/60 transition-colors"
           >
             <span className="h-9 w-9 rounded-full overflow-hidden border border-border bg-secondary grid place-items-center shrink-0">
-              {dev.avatarUrl
-                ? <img src={dev.avatarUrl} alt="" className="h-full w-full object-cover" />
+              {(dev as any).avatarUrl
+                ? <img src={(dev as any).avatarUrl} alt="" className="h-full w-full object-cover" />
                 : <span className="text-xs font-bold text-muted-foreground">{initials}</span>}
             </span>
             <div className="min-w-0">

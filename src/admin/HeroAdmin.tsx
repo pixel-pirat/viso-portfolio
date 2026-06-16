@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
+import { uid } from "@/lib/utils";
 import { useApi } from "@/lib/useApi";
+import { useHero } from "@/lib/useData";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,19 +14,22 @@ import { toast } from "@/hooks/use-toast";
 import type { HeroSlide, ActivityItem } from "@/store/types";
 
 const HeroAdmin = () => {
-  const { state } = useStudio();
+  const { data: heroData, isLoading } = useHero();
   const { saveSlide, deleteSlide, moveSlide, saveActivity, deleteActivity } = useApi();
   const [slide, setSlide] = useState<HeroSlide | null>(null);
   const [open, setOpen] = useState(false);
   const [activity, setActivity] = useState<ActivityItem | null>(null);
   const [aOpen, setAOpen] = useState(false);
 
+  const slides = heroData?.slides ?? [];
+  const activityList = heroData?.activity ?? [];
+
   const newSlide = (): HeroSlide => ({ id: uid(), eyebrow: "", title: "", subtitle: "", ctaLabel: "Start a Project", ctaHref: "/contact" });
   const newActivity = (): ActivityItem => ({ id: uid(), kind: "note", text: "", timestamp: new Date().toISOString() });
 
   const handleSaveSlide = async () => {
     if (!slide) return;
-    const isNew = !state.hero.slides.find((x) => x.id === slide.id);
+    const isNew = !slides.find((x) => x.id === slide.id);
     await saveSlide(slide, isNew);
     toast({ title: "Slide saved" });
     setOpen(false);
@@ -36,12 +40,20 @@ const HeroAdmin = () => {
 
   const handleSaveActivity = async () => {
     if (!activity) return;
-    const isNew = !state.hero.activity.find((x) => x.id === activity.id);
+    const isNew = !activityList.find((x) => x.id === activity.id);
     await saveActivity(activity, isNew);
     setAOpen(false);
   };
 
   const handleDeleteActivity = (id: string) => deleteActivity(id);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[50vh] grid place-items-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -56,7 +68,7 @@ const HeroAdmin = () => {
           <Button variant="hero" size="sm" onClick={() => { setSlide(newSlide()); setOpen(true); }}><Plus size={14} /> Add slide</Button>
         </div>
         <div className="space-y-3">
-          {state.hero.slides.map((sl, i) => (
+          {slides.map((sl, i) => (
             <div key={sl.id} className="border border-border rounded-lg p-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[11px] uppercase tracking-widest text-primary">{sl.eyebrow || "—"}</div>
@@ -67,7 +79,7 @@ const HeroAdmin = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex gap-1">
                   <Button size="icon" variant="ghost" onClick={() => handleMoveSlide(sl.id, -1)} disabled={i === 0}><ArrowUp size={14} /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => handleMoveSlide(sl.id, 1)} disabled={i === state.hero.slides.length - 1}><ArrowDown size={14} /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => handleMoveSlide(sl.id, 1)} disabled={i === slides.length - 1}><ArrowDown size={14} /></Button>
                 </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" onClick={() => { setSlide(sl); setOpen(true); }}><Pencil size={13} /></Button>
@@ -85,7 +97,7 @@ const HeroAdmin = () => {
           <Button variant="hero" size="sm" onClick={() => { setActivity(newActivity()); setAOpen(true); }}><Plus size={14} /> Add activity</Button>
         </div>
         <ul className="divide-y divide-border">
-          {state.hero.activity.map((a) => (
+          {activityList.map((a) => (
             <li key={a.id} className="py-3 flex items-start justify-between gap-3">
               <div>
                 <div className="text-[11px] uppercase tracking-widest text-primary">{a.kind}</div>

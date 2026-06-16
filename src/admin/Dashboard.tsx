@@ -1,18 +1,35 @@
-import { useStudio } from "@/store/StudioStore";
+import { useProjects, useServices, usePosts, useBookings, useHero } from "@/lib/useData";
 import { PageHeader, StatCard } from "./components/AdminUI";
-import { Briefcase, BookOpen, Calendar, Wrench, Users, Sparkles } from "lucide-react";
+import { Briefcase, BookOpen, Calendar, Wrench, Users, Sparkles, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
-  const { state } = useStudio();
-  const newBookings = state.bookings.filter((b) => b.status === "new").length;
-  const wonBookings = state.bookings.filter((b) => b.status === "won").length;
-  const publishedPosts = state.posts.filter((p) => p.isPublished).length;
-  const featured = state.projects.filter((p) => p.isFeatured).length;
+  const { data: projects = [], isLoading: loadingProjects } = useProjects(undefined, true);
+  const { data: services = [], isLoading: loadingServices } = useServices(true);
+  const { data: posts = [], isLoading: loadingPosts } = usePosts(undefined, true);
+  const { data: bookingsData = [], isLoading: loadingBookings } = useBookings("all");
+  const { data: heroData, isLoading: loadingHero } = useHero();
 
-  const recent = [...state.bookings]
+  const isLoading = loadingProjects || loadingServices || loadingPosts || loadingBookings || loadingHero;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
+
+  const newBookings = (bookingsData as any[]).filter((b) => b.status === "new").length;
+  const wonBookings = (bookingsData as any[]).filter((b) => b.status === "won").length;
+  const publishedPosts = (posts as any[]).filter((p) => p.isPublished).length;
+  const featured = (projects as any[]).filter((p) => p.isFeatured).length;
+
+  const recent = [...(bookingsData as any[])]
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, 5);
+
+  const activity = heroData?.activity ?? [];
 
   return (
     <>
@@ -22,9 +39,9 @@ const Dashboard = () => {
       />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Projects" value={state.projects.length} hint={`${featured} featured`} />
-        <StatCard label="Services" value={state.services.length} hint="with tiered packages" />
-        <StatCard label="Blog posts" value={publishedPosts} hint={`${state.posts.length} total`} />
+        <StatCard label="Projects" value={(projects as any[]).length} hint={`${featured} featured`} />
+        <StatCard label="Services" value={(services as any[]).length} hint="with tiered packages" />
+        <StatCard label="Blog posts" value={publishedPosts} hint={`${(posts as any[]).length} total`} />
         <StatCard label="New bookings" value={newBookings} hint={`${wonBookings} won`} />
       </div>
 
@@ -35,9 +52,9 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground">No bookings yet.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {recent.map((b) => {
-                const svc = state.services.find((s) => s.slug === b.serviceSlug);
-                const tier = svc?.tiers.find((t) => t.id === b.tierId);
+              {recent.map((b: any) => {
+                const svc = (services as any[]).find((s) => s.slug === b.serviceSlug);
+                const tier = svc?.tiers?.find((t: any) => t.id === b.tierId);
                 return (
                   <li key={b.id} className="py-3 flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -60,7 +77,7 @@ const Dashboard = () => {
         <div className="surface-card p-6">
           <h2 className="font-display text-lg font-semibold mb-4">Activity feed</h2>
           <ul className="space-y-3">
-            {state.hero.activity.slice(0, 6).map((a) => (
+            {activity.slice(0, 6).map((a: any) => (
               <li key={a.id} className="flex gap-3 text-sm">
                 <span className="grid h-7 w-7 place-items-center rounded-md bg-secondary border border-border text-primary shrink-0">
                   {a.kind === "project" ? <Briefcase size={13} /> :
@@ -73,6 +90,7 @@ const Dashboard = () => {
                 </div>
               </li>
             ))}
+            {activity.length === 0 && <li className="text-sm text-muted-foreground">No recent activity.</li>}
           </ul>
         </div>
       </div>

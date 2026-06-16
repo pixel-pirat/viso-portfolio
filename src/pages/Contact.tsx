@@ -1,21 +1,28 @@
 import { useState } from "react";
-import { Mail, MapPin, Send } from "lucide-react";
+import { Mail, MapPin, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import SectionHeader from "@/components/SectionHeader";
 import { toast } from "@/hooks/use-toast";
-import { useStudio } from "@/store/StudioStore";
 import { useSettings } from "@/lib/useData";
 import { useApi } from "@/lib/useApi";
 
 const Contact = () => {
-  const { state } = useStudio();
-  const { data: apiSettings } = useSettings();
+  const { data: apiSettings, isLoading } = useSettings();
   const { submitContact } = useApi();
-  const c = (apiSettings ?? state.settings).contact;
   const [submitting, setSubmitting] = useState(false);
+
+  if (isLoading || !apiSettings) {
+    return (
+      <div className="min-h-[80vh] grid place-items-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={40} />
+      </div>
+    );
+  }
+
+  const c = apiSettings.contact;
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

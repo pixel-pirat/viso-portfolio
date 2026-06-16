@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useStudio } from "@/store/StudioStore";
+import { useBookings, useServices } from "@/lib/useData";
 import { useApi } from "@/lib/useApi";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Paperclip, Download, FileText } from "lucide-react";
+import { Trash2, Paperclip, Download, FileText, Loader2 } from "lucide-react";
 import type { Booking } from "@/store/types";
 import { downloadDataUrl, formatBytes } from "@/lib/uploads";
 import CreateProposalDialog from "./CreateProposalDialog";
@@ -20,15 +20,24 @@ const statusColor: Record<Booking["status"], string> = {
 };
 
 const BookingsAdmin = () => {
-  const { state } = useStudio();
+  const { data: bookingsData = [], isLoading } = useBookings("all");
+  const { data: services = [] } = useServices(true);
   const { updateBookingStatus, deleteBooking } = useApi();
   const [filter, setFilter] = useState<Booking["status"] | "all">("all");
   const [convert, setConvert] = useState<Booking | null>(null);
 
-  const bookings = filter === "all" ? state.bookings : state.bookings.filter((b) => b.status === filter);
+  const bookings = filter === "all" ? bookingsData : bookingsData.filter((b: any) => b.status === filter);
 
   const setStatus = (id: string, status: Booking["status"]) => updateBookingStatus(id, status);
   const remove = (id: string) => deleteBooking(id);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -48,15 +57,15 @@ const BookingsAdmin = () => {
 
       <div className="space-y-3">
         {bookings.length === 0 && <div className="surface-card p-10 text-center text-muted-foreground">No bookings.</div>}
-        {bookings.map((b) => {
-          const svc = state.services.find((s) => s.slug === b.serviceSlug);
-          const tier = svc?.tiers.find((t) => t.id === b.tierId);
+        {bookings.map((b: any) => {
+          const svc = (services as any[]).find((s) => s.slug === b.serviceSlug);
+          const tier = svc?.tiers?.find((t: any) => t.id === b.tierId);
           return (
             <div key={b.id} className="surface-card p-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${statusColor[b.status]}`}>{b.status}</span>
+                    <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${statusColor[b.status as Booking["status"]]}`}>{b.status}</span>
                     <span className="text-xs text-muted-foreground">{new Date(b.createdAt).toLocaleString()}</span>
                   </div>
                   <h3 className="font-display text-lg font-semibold mt-2">{b.name} <span className="text-muted-foreground font-normal text-sm">· {b.email}</span></h3>
@@ -71,7 +80,7 @@ const BookingsAdmin = () => {
                         <Paperclip size={11} /> Attachments ({b.attachments.length})
                       </div>
                       <ul className="space-y-1.5">
-                        {b.attachments.map((a) => (
+                        {b.attachments.map((a: any) => (
                           <li key={a.id} className="flex items-center justify-between gap-2 text-sm rounded-md border border-border bg-background px-2.5 py-1.5">
                             <span className="truncate">{a.name}</span>
                             <span className="flex items-center gap-2 shrink-0">

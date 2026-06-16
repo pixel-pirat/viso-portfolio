@@ -6,18 +6,17 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 // ─── Token management ────────────────────────────────────────
-const TOKEN_KEY = "studio:token";
-
+// Token is stored in secure HttpOnly cookies, so client-side localStorage is no longer used.
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return null;
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  /* no-op: cookie is set by server */
 }
 
 export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  /* no-op: cookie is cleared by server */
 }
 
 // ─── Core fetch wrapper ──────────────────────────────────────
@@ -33,12 +32,11 @@ async function apiFetch<T = unknown>(path: string, options: FetchOptions = {}): 
     ...(extraHeaders as Record<string, string>),
   };
 
-  if (auth) {
-    const token = getToken();
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_URL}${path}`, { headers, ...rest });
+  const res = await fetch(`${API_URL}${path}`, {
+    headers,
+    credentials: "include",
+    ...rest,
+  });
 
   if (res.status === 401) {
     clearToken();
@@ -94,6 +92,7 @@ export const authApi = {
       false
     ),
   me: () => get<{ id: string; name: string; email: string; role: string; avatar_url: string }>("/api/auth/me"),
+  logout: () => post<{ success: boolean }>("/api/auth/logout", {}, false),
 };
 
 // ─── Services ────────────────────────────────────────────────
@@ -207,6 +206,7 @@ export const collaborationsApi = {
   update: (id: string, data: unknown) => patch(`/api/collaborations/${id}`, data),
   request: (id: string, data: unknown) => post(`/api/collaborations/${id}/requests`, data),
   getRequests: (id: string) => get(`/api/collaborations/${id}/requests`),
+  getMyRequests: (id: string) => get(`/api/collaborations/${id}/my-requests`),
   updateRequest: (id: string, rid: string, status: string) => patch(`/api/collaborations/${id}/requests/${rid}`, { status }),
   addUpdate: (id: string, data: unknown) => post(`/api/collaborations/${id}/updates`, data),
   report: (id: string, data: unknown) => post(`/api/collaborations/${id}/reports`, data),

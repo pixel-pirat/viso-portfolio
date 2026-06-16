@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Layers } from "lucide-react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { Plus, Pencil, Trash2, Layers, Loader2 } from "lucide-react";
+import { uid } from "@/lib/utils";
 import { useApi } from "@/lib/useApi";
+import { useServices } from "@/lib/useData";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import type { Service, ServiceTier } from "@/store/types";
 
-const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const rid = () => Math.random().toString(36).slice(2, 10);
 
 const emptyService = (): Service => ({
   slug: "", title: "", short: "", icon: "Sparkles", problems: [], process: [], tiers: [],
@@ -23,7 +24,7 @@ const emptyTier = (): ServiceTier => ({
 });
 
 const ServicesAdmin = () => {
-  const { state } = useStudio();
+  const { data: services = [], isLoading } = useServices(true);
   const { saveService, deleteService } = useApi();
   const [editing, setEditing] = useState<Service | null>(null);
   const [open, setOpen] = useState(false);
@@ -34,7 +35,7 @@ const ServicesAdmin = () => {
   const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) return toast({ title: "Title required", variant: "destructive" });
-    const isNew = !state.services.find((x) => x.slug === (editing.slug || editing.title));
+    const isNew = !services.find((x) => x.slug === (editing.slug || editing.title));
     await saveService(editing, isNew);
     toast({ title: "Service saved" });
     setOpen(false);
@@ -45,6 +46,14 @@ const ServicesAdmin = () => {
     toast({ title: "Service deleted" });
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-[50vh] grid place-items-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -53,11 +62,11 @@ const ServicesAdmin = () => {
         actions={<Button variant="hero" onClick={openNew}><Plus size={16} /> New service</Button>}
       />
 
-      {state.services.length === 0 ? (
+      {services.length === 0 ? (
         <EmptyState title="No services yet" />
       ) : (
         <div className="space-y-4">
-          {state.services.map((svc) => (
+          {services.map((svc) => (
             <div key={svc.slug} className="surface-card p-6">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>

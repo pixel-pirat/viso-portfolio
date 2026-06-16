@@ -61,31 +61,27 @@ const BookingDialog = ({ service, tier, open, onOpenChange }: Props) => {
   const removeAttachment = (id: string) =>
     setAttachments((a) => a.filter((x) => x.id !== id));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      setState((s) => ({
-        ...s,
-        bookings: [
-          {
-            id: uid(),
-            name, email, message,
-            serviceSlug: service.slug,
-            tierId: tier.id,
-            status: "new",
-            createdAt: new Date().toISOString(),
-            attachments,
-            clientId: session?.role === "client" ? session.id : undefined,
-          },
-          ...s.bookings,
-        ],
-      }));
+    try {
+      await submitBooking({
+        name,
+        email,
+        message,
+        serviceSlug: service.slug,
+        tierId: tier.id,
+        clientId: session?.role === "client" ? session.id : undefined,
+        attachments,
+      });
       toast({ title: "Booking received", description: `We'll reply about your ${tier.name} package within 1 business day.` });
-      setSubmitting(false);
       reset();
       onOpenChange(false);
-    }, 600);
+    } catch (err) {
+      toast({ title: "Failed to submit booking", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

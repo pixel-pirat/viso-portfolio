@@ -5,9 +5,47 @@ import type {
   CollabConsent,
   StudioState,
 } from "@/store/types";
-import { uid } from "@/store/StudioStore";
+
+import { uid } from "@/lib/utils";
+export { uid };
 
 export const COLLAB_CONSENT_VERSION = "2026-05-01";
+
+// ── localStorage-based consent (UI preference, not business data) ─────────────
+const CONSENT_KEY = "studio:collab:consents";
+
+function loadConsents(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(CONSENT_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+/** Check consent using localStorage (preferred) */
+export function hasConsentFromStorage(userId?: string | null): boolean {
+  if (!userId) return false;
+  const consents = loadConsents();
+  return consents[userId] === COLLAB_CONSENT_VERSION;
+}
+
+/** Record consent to localStorage */
+export function recordConsentToStorage(userId: string): void {
+  const consents = loadConsents();
+  consents[userId] = COLLAB_CONSENT_VERSION;
+  try {
+    localStorage.setItem(CONSENT_KEY, JSON.stringify(consents));
+  } catch { /* ignore */ }
+}
+
+/** Revoke consent from localStorage */
+export function revokeConsentFromStorage(userId: string): void {
+  const consents = loadConsents();
+  delete consents[userId];
+  try {
+    localStorage.setItem(CONSENT_KEY, JSON.stringify(consents));
+  } catch { /* ignore */ }
+}
 
 export const CATEGORIES = [
   "SaaS", "Mobile Apps", "AI/ML", "FinTech",

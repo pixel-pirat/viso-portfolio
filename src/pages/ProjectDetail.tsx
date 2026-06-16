@@ -7,7 +7,15 @@ import { useProject } from "@/lib/useData";
 
 const ProjectDetail = () => {
   const { slug } = useParams();
-  const { data: project } = useProject(slug ?? "");
+  const { data: project, isLoading } = useProject(slug ?? "");
+
+  if (isLoading) {
+    return (
+      <section className="container-studio py-32 text-center">
+        <h1 className="text-2xl font-display text-muted-foreground animate-pulse">Loading project...</h1>
+      </section>
+    );
+  }
 
   if (!project) {
     return (

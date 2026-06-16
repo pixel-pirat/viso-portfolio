@@ -52,6 +52,13 @@ router.post(
         role: account.role as AuthPayload["role"],
       });
 
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
       res.status(201).json({ token, user: { id: account.id, name: account.name, email: account.email, role: account.role } });
     } catch (err) {
       next(err);
@@ -99,6 +106,13 @@ router.post(
         role: account.role as AuthPayload["role"],
       });
 
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
       res.json({ token, user: { id: account.id, name: account.name, email: account.email, role: account.role } });
     } catch (err) {
       next(err);
@@ -121,6 +135,16 @@ router.get("/me", requireAuth, async (req: Request, res: Response, next: NextFun
   } catch (err) {
     next(err);
   }
+});
+
+// POST /api/auth/logout
+router.post("/logout", (_req: Request, res: Response) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  res.json({ success: true });
 });
 
 export default router;

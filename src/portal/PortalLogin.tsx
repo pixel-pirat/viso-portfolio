@@ -15,16 +15,16 @@ const PortalLogin = () => {
   const [sEmail, setSEmail] = useState("");
   const [sPw, setSPw] = useState("");
 
-  const onLogin = (e: React.FormEvent) => {
+  const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const r = login(email, password);
-    if (!r.ok) toast({ title: "Sign-in failed", description: (r as { error: string }).error, variant: "destructive" });
+    const r = await login(email, password);
+    if (r.ok === false) toast({ title: "Sign-in failed", description: (r as any).error, variant: "destructive" });
   };
 
-  const onSignup = (e: React.FormEvent) => {
+  const onSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const r = signup({ name: sName, email: sEmail, password: sPw, role: "client" });
-    if (!r.ok) toast({ title: "Signup failed", description: (r as { error: string }).error, variant: "destructive" });
+    const r = await signup({ name: sName, email: sEmail, password: sPw, role: "client" });
+    if (r.ok === false) toast({ title: "Signup failed", description: (r as any).error, variant: "destructive" });
     else toast({ title: "Welcome", description: "Your client account is ready." });
   };
 

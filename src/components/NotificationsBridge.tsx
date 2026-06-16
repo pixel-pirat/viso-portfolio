@@ -1,38 +1,30 @@
 import { useEffect } from "react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import { realtime, type RealtimeEvent } from "@/lib/realtime";
-import type { NotificationItem } from "@/store/types";
 import { toast } from "sonner";
 
 /**
  * Single global subscriber. Mounted once near the app root.
  *  - Connects the mock socket on mount.
- *  - Persists every realtime event into `state.notifications`.
+ *  - Persists every realtime event into the DB via API.
  *  - Shows a sonner toast for events relevant to the current user.
  */
 const NotificationsBridge = () => {
-  const { setState } = useStudio();
+  const { createNotification } = useApi();
   const { session } = useAdminAuth();
 
   useEffect(() => {
     realtime.connect();
     const unsub = realtime.subscribe((e: RealtimeEvent) => {
-      const item: NotificationItem = {
-        id: uid(),
+      // Persist to database via API
+      createNotification({
         kind: e.kind,
         title: e.title,
         body: e.body,
         href: e.href,
         audience: e.audience,
-        createdAt: new Date().toISOString(),
-        read: false,
-      };
-
-      setState((s) => ({
-        ...s,
-        notifications: [item, ...s.notifications].slice(0, 200),
-      }));
+      });
 
       // Show toast only to the addressed audience.
       const isAdminViewer = session?.role === "admin";
@@ -50,7 +42,7 @@ const NotificationsBridge = () => {
       unsub();
       realtime.disconnect();
     };
-  }, [setState, session?.id, session?.role]);
+  }, [createNotification, session?.id, session?.role]);
 
   return null;
 };

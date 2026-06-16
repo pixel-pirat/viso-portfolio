@@ -1,21 +1,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { authApi, usersApi } from "@/lib/api";
 
-const SESSION_KEY = "studio:admin:session";
-const ACCOUNTS_KEY = "studio:admin:accounts";
-
-// ⚠️ Demo-only password gate (legacy quick-access). Change here.
-export const ADMIN_PASSWORD = "studio2026";
-
-export type AccountRole = "admin" | "client";
+export type AccountRole = "admin" | "editor" | "viewer" | "client";
 
 export type Account = {
   id: string;
   name: string;
   email: string;
-  // ⚠️ Plaintext on purpose — this is a frontend mock. Never use in production.
-  password: string;
   role: AccountRole;
-  createdAt: string;
+  createdAt?: string;
 };
 
 type Session = { id: string; email: string; name: string; role: AccountRole } | null;
@@ -23,99 +16,119 @@ type Session = { id: string; email: string; name: string; role: AccountRole } | 
 type AuthCtx = {
   isAuthed: boolean;
   session: Session;
-  /** True if the user is authed as admin (either via session or legacy password gate). */
   isAdmin: boolean;
-  login: (email: string, password: string) => { ok: true } | { ok: false; error: string };
-  legacyLogin: (password: string) => boolean;
-  signup: (input: { name: string; email: string; password: string; role?: AccountRole }) => { ok: true } | { ok: false; error: string };
-  logout: () => void;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  signup: (input: { name: string; email: string; password: string; role?: AccountRole }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  logout: () => Promise<void>;
   accounts: Account[];
+  refreshAccounts: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
 
-const uid = () => Math.random().toString(36).slice(2, 10);
-
-function loadAccounts(): Account[] {
-  try {
-    const raw = localStorage.getItem(ACCOUNTS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as Account[];
-  } catch {
-    return [];
-  }
-}
-
-function saveAccounts(list: Account[]) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
-}
-
-function loadSession(): Session {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    if (raw === "__legacy__") {
-      return { id: "legacy", email: "admin@local", name: "Admin", role: "admin" };
-    }
-    return JSON.parse(raw) as Session;
-  } catch {
-    return null;
-  }
-}
-
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setAccounts(loadAccounts());
-    setSession(loadSession());
+  const fetchAccounts = useCallback(async () => {
+    try {
+      const list = await usersApi.list() as Account[];
+      setAccounts(list);
+    } catch (err) {
+      console.error("Failed to fetch users list", err);
+    }
   }, []);
 
-  const persistSession = (s: Session, legacy = false) => {
-    setSession(s);
-    if (legacy) sessionStorage.setItem(SESSION_KEY, "__legacy__");
-    else if (s) sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
-    else sessionStorage.removeItem(SESSION_KEY);
-  };
-
-  const login: AuthCtx["login"] = (email, password) => {
-    const acct = accounts.find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
-    if (!acct) return { ok: false, error: "No account with that email." };
-    if (acct.password !== password) return { ok: false, error: "Wrong password." };
-    persistSession({ id: acct.id, email: acct.email, name: acct.name, role: acct.role });
-    return { ok: true };
-  };
-
-  const legacyLogin = (password: string) => {
-    if (password === ADMIN_PASSWORD) {
-      persistSession({ id: "legacy", email: "admin@local", name: "Admin", role: "admin" }, true);
-      return true;
+  const checkSession = useCallback(async () => {
+    setLoading(true);
+    try {
+      const user = await authApi.me();
+      const mappedSession: Session = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role as AccountRole,
+      };
+      setSession(mappedSession);
+      if (user.role === "admin" || user.role === "editor") {
+        await fetchAccounts();
+      }
+    } catch {
+      setSession(null);
+    } finally {
+      setLoading(false);
     }
-    return false;
+  }, [fetchAccounts]);
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await authApi.login(email, password);
+      const mappedSession: Session = {
+        id: res.user.id,
+        email: res.user.email,
+        name: res.user.name,
+        role: res.user.role as AccountRole,
+      };
+      setSession(mappedSession);
+      if (res.user.role === "admin" || res.user.role === "editor") {
+        await fetchAccounts();
+      }
+      return { ok: true as const };
+    } catch (err) {
+      return { ok: false as const, error: (err as Error).message };
+    }
   };
 
-  const signup: AuthCtx["signup"] = ({ name, email, password, role = "client" }) => {
-    const e = email.trim().toLowerCase();
-    if (!name.trim()) return { ok: false, error: "Name is required." };
-    if (!/^\S+@\S+\.\S+$/.test(e)) return { ok: false, error: "Enter a valid email." };
-    if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
-    if (accounts.some((a) => a.email.toLowerCase() === e)) return { ok: false, error: "An account with that email already exists." };
-    const acct: Account = { id: uid(), name: name.trim(), email: e, password, role, createdAt: new Date().toISOString() };
-    const next = [acct, ...accounts];
-    setAccounts(next);
-    saveAccounts(next);
-    persistSession({ id: acct.id, email: acct.email, name: acct.name, role: acct.role });
-    return { ok: true };
+  const signup = async ({ name, email, password, role = "client" }: { name: string; email: string; password: string; role?: AccountRole }) => {
+    try {
+      const res = await authApi.register(name, email, password);
+      const mappedSession: Session = {
+        id: res.user.id,
+        email: res.user.email,
+        name: res.user.name,
+        role: res.user.role as AccountRole,
+      };
+      setSession(mappedSession);
+      if (res.user.role === "admin" || res.user.role === "editor") {
+        await fetchAccounts();
+      }
+      return { ok: true as const };
+    } catch (err) {
+      return { ok: false as const, error: (err as Error).message };
+    }
   };
 
-  const logout = useCallback(() => persistSession(null), []);
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch (err) {
+      console.error("Logout failed on server", err);
+    }
+    setSession(null);
+    setAccounts([]);
+  }, []);
 
   const isAuthed = !!session;
-  const isAdmin = session?.role === "admin";
+  const isAdmin = session?.role === "admin" || session?.role === "editor";
 
   return (
-    <Ctx.Provider value={{ isAuthed, session, isAdmin, login, legacyLogin, signup, logout, accounts }}>
+    <Ctx.Provider value={{
+      isAuthed,
+      session,
+      isAdmin,
+      loading,
+      login,
+      signup,
+      logout,
+      accounts,
+      refreshAccounts: fetchAccounts,
+    }}>
       {children}
     </Ctx.Provider>
   );

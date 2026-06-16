@@ -28,12 +28,20 @@ export function signToken(payload: AuthPayload): string {
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  let token: string | undefined;
+
   const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Missing or invalid Authorization header" });
+  if (header?.startsWith("Bearer ")) {
+    token = header.slice(7);
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+
+  if (!token) {
+    res.status(401).json({ error: "Missing or invalid Authorization header or cookie" });
     return;
   }
-  const token = header.slice(7);
+
   try {
     const payload = jwt.verify(token, getJwtSecret()) as AuthPayload;
     req.user = payload;

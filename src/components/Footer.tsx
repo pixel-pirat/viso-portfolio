@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
 import { Github, Twitter, Linkedin, Instagram } from "lucide-react";
 import { navItems } from "@/data/site";
-import { useStudio } from "@/store/StudioStore";
-import { useSettings } from "@/lib/useData";
+import { useSettings, useServices } from "@/lib/useData";
 
 const Footer = () => {
-  const { state } = useStudio();
   const { data: apiSettings } = useSettings();
-  const { brand, contact } = apiSettings ?? state.settings;
+  const { data: services = [] } = useServices();
+
+  if (!apiSettings) return null;
+
+  const { brand, contact } = apiSettings;
   const socials = [
     { Icon: Twitter, href: contact.socials.twitter },
     { Icon: Github, href: contact.socials.github },
@@ -48,7 +50,7 @@ const Footer = () => {
         <div>
           <h4 className="font-display text-sm font-semibold mb-4">Services</h4>
           <ul className="space-y-2">
-            {state.services.map((s) => (
+            {services.map((s) => (
               <li key={s.slug}>
                 <Link to={`/services/${s.slug}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {s.title.split(" / ")[0]}

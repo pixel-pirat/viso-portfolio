@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Users, Lock, Sparkles, ShieldCheck, Calendar, Copyright,
-  Flag, MessageSquare, Send, AlertTriangle, Pencil,
+  Flag, MessageSquare, Send, AlertTriangle, Pencil, Loader2
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,21 +18,24 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useStudio } from "@/store/StudioStore";
 import { useAdminAuth } from "@/admin/AdminAuth";
+import { useCollaboration, useCollabMyRequests } from "@/lib/useData";
+import { collaborationsApi, notificationsApi } from "@/lib/api";
 import {
-  ROLES_NEEDED, fundingLabel, hasConsent, isVisibleTo, newRequest, newUpdate,
+  ROLES_NEEDED, fundingLabel, hasConsentFromStorage, isVisibleTo,
   stageLabel, visibilityLabel,
 } from "@/lib/collab";
 import { toast } from "@/hooks/use-toast";
-import { uid } from "@/store/StudioStore";
 
 const CollaborationDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { state, setState } = useStudio();
+  const queryClient = useQueryClient();
   const { session } = useAdminAuth();
-  const collab = state.collaborations.find((c) => c.id === id);
+
+  const { data: rawCollab, isLoading, isError } = useCollaboration(id!);
+  const { data: myRequests = [] } = useCollabMyRequests(id!);
+
   const [ndaAck, setNdaAck] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -42,19 +46,40 @@ const CollaborationDetail = () => {
   const [interestMsg, setInterestMsg] = useState("");
   const [discussionBody, setDiscussionBody] = useState("");
 
-  const accepted = hasConsent(state, session?.id);
-  const isOwner = !!session && collab?.ownerId === session.id;
+  const collab = useMemo(() => {
+    if (!rawCollab) return null;
+    return {
+      ...rawCollab,
+      ownerId: rawCollab.ownerId ?? rawCollab.owner_id,
+      ownerName: rawCollab.ownerName ?? rawCollab.owner_name,
+      ownerEmail: rawCollab.ownerEmail ?? rawCollab.owner_email,
+      skillsNeeded: rawCollab.skillsNeeded ?? rawCollab.skills_needed ?? [],
+      rolesNeeded: rawCollab.rolesNeeded ?? rawCollab.roles_needed ?? [],
+      fundingStatus: rawCollab.fundingStatus ?? rawCollab.funding_status ?? "n/a",
+      fundingGoal: rawCollab.fundingGoal ?? rawCollab.funding_goal,
+      teamSize: rawCollab.teamSize ?? rawCollab.team_size ?? 1,
+      requiresNda: rawCollab.requiresNda ?? rawCollab.requires_nda ?? false,
+      coverImage: rawCollab.coverImage ?? rawCollab.cover_image,
+      createdAt: rawCollab.createdAt ?? rawCollab.created_at,
+      updatedAt: rawCollab.updatedAt ?? rawCollab.updated_at,
+    };
+  }, [rawCollab]);
 
-  const updates = useMemo(
-    () => state.collaborationUpdates.filter((u) => u.collaborationId === id).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
-    [state.collaborationUpdates, id],
-  );
-  const myRequests = useMemo(
-    () => state.collaborationRequests.filter((r) => r.collaborationId === id),
-    [state.collaborationRequests, id],
-  );
+  const accepted = hasConsentFromStorage(session?.id);
 
-  if (!collab) {
+  if (isLoading) {
+    return (
+      <>
+        <Navbar />
+        <main className="flex-1 pt-16 container-studio py-20 text-center flex justify-center items-center">
+          <Loader2 className="animate-spin text-primary mr-2" /> Loading collaboration...
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!collab || isError) {
     return (
       <>
         <Navbar />
@@ -67,73 +92,77 @@ const CollaborationDetail = () => {
     );
   }
 
+  const isOwner = !!session && collab.ownerId === session.id;
   const visible = isVisibleTo(collab, session?.id) || isOwner;
   const ndaGated = collab.requiresNda && !isOwner && !ndaAck;
 
-  const submitInterest = () => {
+  const updates = useMemo(() => {
+    return ((collab.updates ?? []) as any[]).map((u) => ({
+      ...u,
+      authorId: u.authorId ?? u.author_id,
+      authorName: u.authorName ?? u.author_name,
+      authorRole: u.authorRole ?? u.author_role,
+      createdAt: u.createdAt ?? u.created_at,
+    })).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  }, [collab.updates]);
+
+  const submitInterest = async () => {
     if (!session) return navigate("/portal");
     if (!interestMsg.trim()) {
       toast({ title: "Add a message", description: "Briefly introduce yourself.", variant: "destructive" });
       return;
     }
-    setState((s) => ({
-      ...s,
-      collaborationRequests: [
-        newRequest(collab.id, { id: session.id, name: session.name, email: session.email }, interestKind, interestMsg, interestRole),
-        ...s.collaborationRequests,
-      ],
-      notifications: [
-        {
-          id: uid(),
-          kind: "message",
-          title: `New ${interestKind} request — ${collab.title}`,
-          body: `${session.name} reached out.`,
-          href: `/collaborations/${collab.id}`,
-          audience: collab.ownerId,
-          createdAt: new Date().toISOString(),
-          read: false,
-        },
-        ...s.notifications,
-      ],
-    }));
-    setInterestMsg("");
-    toast({ title: "Request sent", description: "The founder will review your request." });
+    try {
+      await collaborationsApi.request(collab.id, {
+        kind: interestKind,
+        role: interestRole,
+        message: interestMsg,
+      });
+      queryClient.invalidateQueries({ queryKey: ["collaborations", collab.id, "my-requests"] });
+      
+      await notificationsApi.broadcast({
+        kind: "message",
+        title: `New ${interestKind} request — ${collab.title}`,
+        body: `${session.name} reached out.`,
+        href: `/collaborations/${collab.id}`,
+        audience: collab.ownerId,
+      });
+      setInterestMsg("");
+      toast({ title: "Request sent", description: "The founder will review your request." });
+    } catch (err) {
+      toast({ title: "Failed to send request", description: (err as Error).message, variant: "destructive" });
+    }
   };
 
-  const submitDiscussion = () => {
+  const submitDiscussion = async () => {
     if (!session) return navigate("/portal");
     if (!discussionBody.trim()) return;
-    setState((s) => ({
-      ...s,
-      collaborationUpdates: [
-        newUpdate(collab.id, { id: session.id, name: session.name, role: isOwner ? "founder" : "visitor" }, isOwner ? "update" : "discussion", discussionBody),
-        ...s.collaborationUpdates,
-      ],
-    }));
-    setDiscussionBody("");
+    try {
+      await collaborationsApi.addUpdate(collab.id, {
+        kind: isOwner ? "update" : "discussion",
+        body: discussionBody,
+        authorRole: isOwner ? "founder" : "visitor",
+      });
+      queryClient.invalidateQueries({ queryKey: ["collaborations", collab.id] });
+      setDiscussionBody("");
+    } catch (err) {
+      toast({ title: "Failed to post discussion", description: (err as Error).message, variant: "destructive" });
+    }
   };
 
-  const submitReport = () => {
+  const submitReport = async () => {
     if (!session) return navigate("/portal");
-    setState((s) => ({
-      ...s,
-      collaborationReports: [
-        {
-          id: uid(),
-          collaborationId: collab.id,
-          reporterId: session.id,
-          reporterName: session.name,
-          reason: reportReason,
-          details: reportDetails,
-          status: "open",
-          createdAt: new Date().toISOString(),
-        },
-        ...s.collaborationReports,
-      ],
-    }));
-    setReportOpen(false);
-    setReportDetails("");
-    toast({ title: "Report submitted", description: "Our team will review this collaboration." });
+    try {
+      await collaborationsApi.report(collab.id, {
+        reason: reportReason,
+        details: reportDetails,
+      });
+      setReportOpen(false);
+      setReportDetails("");
+      toast({ title: "Report submitted", description: "Our team will review this collaboration." });
+    } catch (err) {
+      toast({ title: "Failed to submit report", description: (err as Error).message, variant: "destructive" });
+    }
   };
 
   const VIcon = collab.visibility === "public" ? Sparkles : collab.visibility === "invite_only" ? Users : Lock;

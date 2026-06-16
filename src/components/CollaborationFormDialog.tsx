@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useStudio } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import {
   CATEGORIES, FUNDING_STATUSES, ROLES_NEEDED, STAGES, VISIBILITY,
@@ -22,7 +22,7 @@ type Props = {
 };
 
 const CollaborationFormDialog = ({ open, onOpenChange, initial }: Props) => {
-  const { setState } = useStudio();
+  const { saveCollaboration } = useApi();
   const { session } = useAdminAuth();
   const [form, setForm] = useState({
     title: initial?.title ?? "",
@@ -50,26 +50,25 @@ const CollaborationFormDialog = ({ open, onOpenChange, initial }: Props) => {
       rolesNeeded: f.rolesNeeded.includes(r) ? f.rolesNeeded.filter((x) => x !== r) : [...f.rolesNeeded, r],
     }));
 
-  const submit = () => {
+  const submit = async () => {
     if (!session) return;
     if (!form.title.trim() || !form.summary.trim()) {
       toast({ title: "Missing fields", description: "Title and summary are required.", variant: "destructive" });
       return;
     }
     const split = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
-    setState((s) => {
-      if (initial) {
-        return {
-          ...s,
-          collaborations: s.collaborations.map((c) => c.id === initial.id ? {
-            ...c,
-            ...form,
-            tags: split(form.tags),
-            skillsNeeded: split(form.skillsNeeded),
-            updatedAt: new Date().toISOString(),
-          } : c),
-        };
-      }
+
+    if (initial) {
+      // Update existing
+      await saveCollaboration({
+        ...initial,
+        ...form,
+        tags: split(form.tags),
+        skillsNeeded: split(form.skillsNeeded),
+        updatedAt: new Date().toISOString(),
+      }, false);
+    } else {
+      // Create new
       const created = newCollaboration({
         ownerId: session.id,
         ownerName: session.name,
@@ -78,8 +77,8 @@ const CollaborationFormDialog = ({ open, onOpenChange, initial }: Props) => {
         tags: split(form.tags),
         skillsNeeded: split(form.skillsNeeded),
       });
-      return { ...s, collaborations: [created, ...s.collaborations] };
-    });
+      await saveCollaboration(created, true);
+    }
     toast({ title: initial ? "Collaboration updated" : "Collaboration published" });
     onOpenChange(false);
   };

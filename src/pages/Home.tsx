@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowRight, ArrowUpRight, Sparkles, Activity } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Sparkles, Activity, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
-import { useStudio } from "@/store/StudioStore";
 import { useProjects, usePosts, useHero, useSettings, useServices } from "@/lib/useData";
 import { getIcon } from "@/lib/icons";
 import heroTech from "@/assets/hero-3d-studio.jpg";
@@ -18,18 +17,16 @@ const timeAgo = (iso: string) => {
 };
 
 const Home = () => {
-  const { state } = useStudio();
-  const { data: heroData } = useHero();
-  const { data: projects = [] } = useProjects();
-  const { data: posts = [] } = usePosts();
-  const { data: services = [] } = useServices();
-  const { data: settings } = useSettings();
-
-  const slides = heroData?.slides ?? state.hero.slides;
-  const activity = heroData?.activity ?? state.hero.activity;
-  const currentSettings = settings ?? state.settings;
+  const { data: heroData, isLoading: heroLoading } = useHero();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: posts = [], isLoading: postsLoading } = usePosts();
+  const { data: services = [], isLoading: servicesLoading } = useServices();
+  const { data: settings, isLoading: settingsLoading } = useSettings();
 
   const [idx, setIdx] = useState(0);
+
+  const slides = heroData?.slides ?? [];
+  const activity = heroData?.activity ?? [];
 
   useEffect(() => {
     if (slides.length < 2) return;
@@ -37,6 +34,15 @@ const Home = () => {
     return () => clearInterval(t);
   }, [slides.length]);
 
+  if (heroLoading || projectsLoading || postsLoading || servicesLoading || settingsLoading || !settings || !heroData) {
+    return (
+      <div className="min-h-[80vh] grid place-items-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={40} />
+      </div>
+    );
+  }
+
+  const currentSettings = settings;
   const current = slides[idx] ?? slides[0];
   const featuredProjects = ((projects as { isFeatured?: boolean; is_featured?: boolean }[])
     .filter((p) => p.isFeatured ?? p.is_featured).length

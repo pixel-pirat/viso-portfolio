@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Briefcase, FileText, ExternalLink, LogOut, CalendarDays, Network } from "lucide-react";
+import { LayoutDashboard, Briefcase, FileText, ExternalLink, LogOut, CalendarDays, Network, Loader2 } from "lucide-react";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,16 @@ const items = [
 ];
 
 const PortalLayout = () => {
-  const { isAuthed, session, logout } = useAdminAuth();
+  const { isAuthed, session, logout, loading } = useAdminAuth();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
 
   if (!isAuthed) return <PortalLogin />;
 

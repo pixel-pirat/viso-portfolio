@@ -12,11 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useStudio } from "@/store/StudioStore";
 import { useCollaborations } from "@/lib/useData";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import {
-  CATEGORIES, STAGES, hasConsent, isVisibleTo, stageLabel,
+  CATEGORIES, STAGES, hasConsentFromStorage, isVisibleTo, stageLabel,
   visibilityLabel, fundingLabel,
 } from "@/lib/collab";
 import type { Collaboration } from "@/store/types";
@@ -64,7 +63,6 @@ const Card = ({ c }: { c: Collaboration }) => {
 };
 
 const Collaborations = () => {
-  const { state } = useStudio();
   const { session } = useAdminAuth();
   const navigate = useNavigate();
   const { data: collabData = [] } = useCollaborations();
@@ -75,7 +73,7 @@ const Collaborations = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
 
-  const accepted = hasConsent(state, session?.id);
+  const accepted = hasConsentFromStorage(session?.id);
 
   const list = useMemo(() => {
     let items = (collabData as Collaboration[]).filter((c) => isVisibleTo(c, session?.id) || c.ownerId === session?.id);

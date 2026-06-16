@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ import usersRouter from "./routes/users";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 
 const app = express();
+app.use(cookieParser());
 const PORT = process.env.PORT || 3001;
 
 // ─── Security ───────────────────────────────────────────────

@@ -5,8 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAdminAuth } from "@/admin/AdminAuth";
-import { useStudio } from "@/store/StudioStore";
-import { hasConsent, recordConsent } from "@/lib/collab";
+import { hasConsentFromStorage, recordConsentToStorage } from "@/lib/collab";
 import { ShieldCheck, Lock, Copyright } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -41,10 +40,9 @@ const POLICIES = [
 ];
 
 const CollabConsentGate = ({ fullPage, onAccepted, forceOpen, onClose }: Props) => {
-  const { state, setState } = useStudio();
   const { session } = useAdminAuth();
   const navigate = useNavigate();
-  const accepted = hasConsent(state, session?.id);
+  const accepted = hasConsentFromStorage(session?.id);
   const [checks, setChecks] = useState<Record<string, boolean>>({ privacy: false, terms: false, ip: false });
   const [confirm, setConfirm] = useState(false);
 
@@ -53,7 +51,7 @@ const CollabConsentGate = ({ fullPage, onAccepted, forceOpen, onClose }: Props) 
 
   const handleAccept = () => {
     if (!session) return;
-    setState((s) => ({ ...s, collabConsents: [...s.collabConsents.filter((c) => c.userId !== session.id), recordConsent(session.id)] }));
+    recordConsentToStorage(session.id);
     toast({ title: "Welcome to Collaborations", description: "Your consent has been recorded." });
     onClose?.();
     onAccepted?.();

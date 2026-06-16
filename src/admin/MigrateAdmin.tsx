@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useStudio } from "@/store/StudioStore";
 import { PageHeader } from "./components/AdminUI";
+import { seedState } from "@/store/seed";
+import type { StudioState } from "@/store/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +26,18 @@ const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 const MigrateAdmin = () => {
-  const { state } = useStudio();
+  const state = (() => {
+    try {
+      const raw = localStorage.getItem("studio:state:v3");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<StudioState>;
+        return { ...seedState, ...parsed } as StudioState;
+      }
+    } catch (e) {
+      console.error("Failed to parse studio state from localStorage", e);
+    }
+    return seedState;
+  })();
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [email, setEmail] = useState("alex@studio.com");
@@ -271,17 +283,32 @@ const MigrateAdmin = () => {
           </div>
         )}
 
-        <Button
-          variant="hero"
-          onClick={run}
-          disabled={running || !authed}
-          className="w-full sm:w-auto"
-        >
-          {running
-            ? <><Loader2 size={16} className="animate-spin" /> Migrating...</>
-            : <><DatabaseZap size={16} /> {done ? "Run again" : "Start migration"}</>
-          }
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="hero"
+            onClick={run}
+            disabled={running || !authed}
+            className="flex-1 sm:flex-none"
+          >
+            {running
+              ? <><Loader2 size={16} className="animate-spin" /> Migrating...</>
+              : <><DatabaseZap size={16} /> {done ? "Run again" : "Start migration"}</>
+            }
+          </Button>
+
+          {done && !hasErrors && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                localStorage.removeItem("studio:state:v3");
+                toast({ title: "Local storage cleared", description: "Old studio state has been removed from this browser." });
+              }}
+              className="flex-1 sm:flex-none"
+            >
+              Clear obsolete localStorage
+            </Button>
+          )}
+        </div>
       </div>
     </>
   );
