@@ -40,8 +40,8 @@ const ProjectDetail = () => {
       <section className="container-studio pb-16">
         <div className="aspect-[16/9] rounded-3xl bg-gradient-to-br from-primary/20 via-secondary to-accent-purple/20 border border-border grid place-items-center relative overflow-hidden">
           <div className="absolute inset-0 grid-bg opacity-50" />
-          {project.coverImage ? (
-            <img src={project.coverImage} alt={project.title} className="absolute inset-0 h-full w-full object-cover" />
+          {(project.coverImage ?? (project as { cover_image?: string }).cover_image) ? (
+            <img src={project.coverImage ?? (project as { cover_image?: string }).cover_image} alt={project.title} className="absolute inset-0 h-full w-full object-cover" />
           ) : (
             <span className="relative font-display text-8xl md:text-9xl font-bold text-gradient">{project.title.charAt(0)}</span>
           )}

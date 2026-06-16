@@ -10,11 +10,57 @@ import {
 
 const STALE = 30_000; // 30 seconds fresh time
 
+// ─── Field normalizer ─────────────────────────────────────
+// API returns snake_case from PostgreSQL — normalize to camelCase for frontend
+function normalizeProject(p: any) {
+  return {
+    ...p,
+    coverImage: p.coverImage ?? p.cover_image ?? undefined,
+    isFeatured: p.isFeatured ?? p.is_featured ?? false,
+    isPublished: p.isPublished ?? p.is_published ?? true,
+    publishedAt: p.publishedAt ?? p.published_at ?? "",
+    tools: p.tools ?? [],
+    results: p.results ?? [],
+    gallery: p.gallery ?? [],
+  };
+}
+
+function normalizePost(p: any) {
+  return {
+    ...p,
+    isPublished: p.isPublished ?? p.is_published ?? true,
+    readTime: p.readTime ?? p.read_time ?? "5 min",
+    date: p.date ?? p.published_at ?? "",
+    content: Array.isArray(p.content)
+      ? p.content
+      : (typeof p.content === "string" ? JSON.parse(p.content || "[]") : []),
+  };
+}
+
+function normalizeService(s: any) {
+  return {
+    ...s,
+    problems: s.problems ?? [],
+    process: s.process ?? [],
+    tiers: (s.tiers ?? []).map((t: any) => ({
+      ...t,
+      id: t.id ?? t.tier_key,
+      ctaLabel: t.ctaLabel ?? t.cta_label,
+      features: Array.isArray(t.features)
+        ? t.features
+        : (typeof t.features === "string" ? JSON.parse(t.features || "[]") : []),
+    })),
+  };
+}
+
 // ─── Services ────────────────────────────────────────────
 export function useServices(isAdmin = false) {
   return useQuery({
     queryKey: ["services", { isAdmin }],
-    queryFn: () => (isAdmin ? servicesApi.listAll() : servicesApi.list()) as Promise<any[]>,
+    queryFn: async () => {
+      const data = await (isAdmin ? servicesApi.listAll() : servicesApi.list()) as any[];
+      return data.map(normalizeService);
+    },
     staleTime: STALE,
   });
 }
@@ -22,7 +68,7 @@ export function useServices(isAdmin = false) {
 export function useService(slug: string) {
   return useQuery({
     queryKey: ["services", slug],
-    queryFn: () => servicesApi.get(slug) as Promise<any>,
+    queryFn: async () => normalizeService(await servicesApi.get(slug) as any),
     staleTime: STALE,
     enabled: !!slug,
   });
@@ -32,7 +78,10 @@ export function useService(slug: string) {
 export function useProjects(params?: { category?: string; featured?: boolean }, isAdmin = false) {
   return useQuery({
     queryKey: ["projects", params, { isAdmin }],
-    queryFn: () => (isAdmin ? projectsApi.listAll() : projectsApi.list(params)) as Promise<any[]>,
+    queryFn: async () => {
+      const data = await (isAdmin ? projectsApi.listAll() : projectsApi.list(params)) as any[];
+      return data.map(normalizeProject);
+    },
     staleTime: STALE,
   });
 }
@@ -40,7 +89,7 @@ export function useProjects(params?: { category?: string; featured?: boolean }, 
 export function useProject(slug: string) {
   return useQuery({
     queryKey: ["projects", slug],
-    queryFn: () => projectsApi.get(slug) as Promise<any>,
+    queryFn: async () => normalizeProject(await projectsApi.get(slug) as any),
     staleTime: STALE,
     enabled: !!slug,
   });
@@ -50,7 +99,10 @@ export function useProject(slug: string) {
 export function usePosts(category?: string, isAdmin = false) {
   return useQuery({
     queryKey: ["posts", category, { isAdmin }],
-    queryFn: () => (isAdmin ? blogApi.listAll() : blogApi.list(category)) as Promise<any[]>,
+    queryFn: async () => {
+      const data = await (isAdmin ? blogApi.listAll() : blogApi.list(category)) as any[];
+      return data.map(normalizePost);
+    },
     staleTime: STALE,
   });
 }
@@ -58,7 +110,7 @@ export function usePosts(category?: string, isAdmin = false) {
 export function usePost(slug: string) {
   return useQuery({
     queryKey: ["posts", slug],
-    queryFn: () => blogApi.get(slug) as Promise<any>,
+    queryFn: async () => normalizePost(await blogApi.get(slug) as any),
     staleTime: STALE,
     enabled: !!slug,
   });
