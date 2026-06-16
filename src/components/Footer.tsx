@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { Github, Twitter, Linkedin, Instagram } from "lucide-react";
 import { navItems } from "@/data/site";
 import { useStudio } from "@/store/StudioStore";
+import { useSettings } from "@/lib/useData";
 
 const Footer = () => {
   const { state } = useStudio();
-  const { brand, contact } = state.settings;
+  const { data: apiSettings } = useSettings();
+  const { brand, contact } = apiSettings ?? state.settings;
   const socials = [
     { Icon: Twitter, href: contact.socials.twitter },
     { Icon: Github, href: contact.socials.github },

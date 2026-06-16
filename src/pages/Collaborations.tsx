@@ -67,6 +67,7 @@ const Collaborations = () => {
   const { state } = useStudio();
   const { session } = useAdminAuth();
   const navigate = useNavigate();
+  const { data: collabData = [] } = useCollaborations();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("all");
   const [stage, setStage] = useState<string>("all");
@@ -77,11 +78,11 @@ const Collaborations = () => {
   const accepted = hasConsent(state, session?.id);
 
   const list = useMemo(() => {
-    let items = state.collaborations.filter((c) => isVisibleTo(c, session?.id) || c.ownerId === session?.id);
+    let items = (collabData as Collaboration[]).filter((c) => isVisibleTo(c, session?.id) || c.ownerId === session?.id);
     if (q.trim()) {
       const needle = q.toLowerCase();
       items = items.filter((c) =>
-        [c.title, c.summary, c.description, c.tags.join(" "), c.skillsNeeded.join(" ")]
+        [c.title, c.summary, c.description, (c.tags ?? []).join(" "), (c.skillsNeeded ?? []).join(" ")]
           .join(" ").toLowerCase().includes(needle),
       );
     }
@@ -90,7 +91,7 @@ const Collaborations = () => {
     if (sort === "newest") items.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
     if (sort === "team") items.sort((a, b) => b.teamSize - a.teamSize);
     return items;
-  }, [state.collaborations, q, cat, stage, sort, session?.id]);
+  }, [collabData, q, cat, stage, sort, session?.id]);
 
   return (
     <>

@@ -7,20 +7,35 @@ import { Label } from "@/components/ui/label";
 import SectionHeader from "@/components/SectionHeader";
 import { toast } from "@/hooks/use-toast";
 import { useStudio } from "@/store/StudioStore";
+import { useSettings } from "@/lib/useData";
+import { useApi } from "@/lib/useApi";
 
 const Contact = () => {
   const { state } = useStudio();
-  const c = state.settings.contact;
+  const { data: apiSettings } = useSettings();
+  const { submitContact } = useApi();
+  const c = (apiSettings ?? state.settings).contact;
   const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      (e.target as HTMLFormElement).reset();
+    const form = e.target as HTMLFormElement;
+    const data = new FormData(form);
+    try {
+      await submitContact({
+        name: data.get("name") as string,
+        email: data.get("email") as string,
+        projectDetails: `${data.get("project") ?? ""}\n\n${data.get("message") ?? ""}`.trim(),
+        source: "contact_page",
+      });
       toast({ title: "Message sent", description: "Thanks — we'll get back within one business day." });
-    }, 800);
+      form.reset();
+    } catch {
+      toast({ title: "Failed to send", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
