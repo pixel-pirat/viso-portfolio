@@ -42,6 +42,7 @@ import PortalCollaborations from "./portal/PortalCollaborations";
 import Collaborations from "./pages/Collaborations";
 import CollaborationDetail from "./pages/CollaborationDetail";
 import CollaborationsAdmin from "./admin/CollaborationsAdmin";
+import MigrateAdmin from "./admin/MigrateAdmin";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => (
                   <Route path="client-projects" element={<ClientProjectsAdmin />} />
                   <Route path="appointments" element={<AppointmentsAdmin />} />
                   <Route path="collaborations" element={<CollaborationsAdmin />} />
+                  <Route path="migrate" element={<MigrateAdmin />} />
                   <Route path="users" element={<UsersAdmin />} />
                   <Route path="analytics" element={<AnalyticsAdmin />} />
                   <Route path="settings" element={<SettingsAdmin />} />
