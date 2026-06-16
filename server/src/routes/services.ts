@@ -110,10 +110,17 @@ router.post("/", requireAdmin, async (req: Request, res: Response, next: NextFun
   }
 });
 
-// PATCH /api/services/:id (admin)
+// PATCH /api/services/:id (admin) — :id can be UUID or slug
 router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, short, icon, sort_order, is_published, problems, process: steps, tiers } = req.body;
+    // Resolve to UUID — accept both uuid and slug
+    const resolved = await queryOne<{ id: string }>(
+      `SELECT id FROM services WHERE id=$1 OR slug=$1 LIMIT 1`,
+      [req.params.id]
+    );
+    if (!resolved) { res.status(404).json({ error: "Service not found" }); return; }
+    const svcId = resolved.id;
     const { pool } = await import("../db/pool");
     const client = await pool.connect();
     try {
@@ -122,27 +129,27 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: Nex
         `UPDATE services SET title=COALESCE($1,title), short=COALESCE($2,short), icon=COALESCE($3,icon),
          sort_order=COALESCE($4,sort_order), is_published=COALESCE($5,is_published)
          WHERE id=$6`,
-        [title, short, icon, sort_order, is_published, req.params.id]
+        [title, short, icon, sort_order, is_published, svcId]
       );
       if (problems) {
-        await client.query(`DELETE FROM service_problems WHERE service_id=$1`, [req.params.id]);
+        await client.query(`DELETE FROM service_problems WHERE service_id=$1`, [svcId]);
         for (let i = 0; i < problems.length; i++) {
-          await client.query(`INSERT INTO service_problems (service_id, body, position) VALUES ($1,$2,$3)`, [req.params.id, problems[i], i]);
+          await client.query(`INSERT INTO service_problems (service_id, body, position) VALUES ($1,$2,$3)`, [svcId, problems[i], i]);
         }
       }
       if (steps) {
-        await client.query(`DELETE FROM service_process_steps WHERE service_id=$1`, [req.params.id]);
+        await client.query(`DELETE FROM service_process_steps WHERE service_id=$1`, [svcId]);
         for (let i = 0; i < steps.length; i++) {
-          await client.query(`INSERT INTO service_process_steps (service_id, step, body, position) VALUES ($1,$2,$3,$4)`, [req.params.id, steps[i].step, steps[i].text, i]);
+          await client.query(`INSERT INTO service_process_steps (service_id, step, body, position) VALUES ($1,$2,$3,$4)`, [svcId, steps[i].step, steps[i].text, i]);
         }
       }
       if (tiers) {
-        await client.query(`DELETE FROM service_tiers WHERE service_id=$1`, [req.params.id]);
+        await client.query(`DELETE FROM service_tiers WHERE service_id=$1`, [svcId]);
         for (let i = 0; i < tiers.length; i++) {
           const t = tiers[i];
           await client.query(
             `INSERT INTO service_tiers (service_id, tier_key, name, price, description, features, highlighted, cta_label, position) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-            [req.params.id, t.id, t.name, t.price, t.description, JSON.stringify(t.features ?? []), t.highlighted ?? false, t.ctaLabel, i]
+            [svcId, t.id, t.name, t.price, t.description, JSON.stringify(t.features ?? []), t.highlighted ?? false, t.ctaLabel, i]
           );
         }
       }

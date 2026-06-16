@@ -66,10 +66,14 @@ router.post("/", requireAdmin, async (req: Request, res: Response, next: NextFun
   }
 });
 
-// PATCH /api/blog/:id (admin)
+// PATCH /api/blog/:id (admin) — :id can be UUID or slug
 router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, excerpt, content, category, read_time, cover_image, is_published, published_at } = req.body;
+    const resolved = await queryOne<{ id: string }>(
+      `SELECT id FROM blog_posts WHERE id=$1 OR slug=$1 LIMIT 1`, [req.params.id]
+    );
+    if (!resolved) { res.status(404).json({ error: "Post not found" }); return; }
     await query(
       `UPDATE blog_posts SET
        title=COALESCE($1,title), excerpt=COALESCE($2,excerpt),
@@ -77,7 +81,7 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: Nex
        read_time=COALESCE($5,read_time), cover_image=COALESCE($6,cover_image),
        is_published=COALESCE($7,is_published), published_at=COALESCE($8,published_at)
        WHERE id=$9`,
-      [title, excerpt, content ? JSON.stringify(content) : null, category, read_time, cover_image, is_published, published_at, req.params.id]
+      [title, excerpt, content ? JSON.stringify(content) : null, category, read_time, cover_image, is_published, published_at, resolved.id]
     );
     res.json({ ok: true });
   } catch (err) {

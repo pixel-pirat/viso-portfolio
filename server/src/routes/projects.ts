@@ -117,10 +117,15 @@ router.post("/", requireAdmin, async (req: Request, res: Response, next: NextFun
   }
 });
 
-// PATCH /api/projects/:id (admin)
+// PATCH /api/projects/:id (admin) — :id can be UUID or slug
 router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, category, excerpt, problem, solution, cover_image, is_featured, is_published, published_at, tools, results, gallery } = req.body;
+    const resolved = await queryOne<{ id: string }>(
+      `SELECT id FROM projects WHERE id=$1 OR slug=$1 LIMIT 1`, [req.params.id]
+    );
+    if (!resolved) { res.status(404).json({ error: "Project not found" }); return; }
+    const pid = resolved.id;
     const { pool } = await import("../db/pool");
     const client = await pool.connect();
     try {
@@ -132,27 +137,27 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: Nex
          is_featured=COALESCE($7,is_featured), is_published=COALESCE($8,is_published),
          published_at=COALESCE($9,published_at)
          WHERE id=$10`,
-        [title, category, excerpt, problem, solution, cover_image, is_featured, is_published, published_at, req.params.id]
+        [title, category, excerpt, problem, solution, cover_image, is_featured, is_published, published_at, pid]
       );
       if (tools) {
-        await client.query(`DELETE FROM project_tools WHERE project_id=$1`, [req.params.id]);
+        await client.query(`DELETE FROM project_tools WHERE project_id=$1`, [pid]);
         for (let i = 0; i < tools.length; i++) {
-          await client.query(`INSERT INTO project_tools (project_id, name, position) VALUES ($1,$2,$3)`, [req.params.id, tools[i], i]);
+          await client.query(`INSERT INTO project_tools (project_id, name, position) VALUES ($1,$2,$3)`, [pid, tools[i], i]);
         }
       }
       if (results) {
-        await client.query(`DELETE FROM project_results WHERE project_id=$1`, [req.params.id]);
+        await client.query(`DELETE FROM project_results WHERE project_id=$1`, [pid]);
         for (let i = 0; i < results.length; i++) {
-          await client.query(`INSERT INTO project_results (project_id, metric, label, position) VALUES ($1,$2,$3,$4)`, [req.params.id, results[i].metric, results[i].label, i]);
+          await client.query(`INSERT INTO project_results (project_id, metric, label, position) VALUES ($1,$2,$3,$4)`, [pid, results[i].metric, results[i].label, i]);
         }
       }
       if (gallery) {
-        await client.query(`DELETE FROM project_media WHERE project_id=$1`, [req.params.id]);
+        await client.query(`DELETE FROM project_media WHERE project_id=$1`, [pid]);
         for (let i = 0; i < gallery.length; i++) {
           const g = gallery[i];
           await client.query(
             `INSERT INTO project_media (project_id, url, alt, kind, caption, position) VALUES ($1,$2,$3,$4,$5,$6)`,
-            [req.params.id, g.url, g.alt, g.kind ?? "image", g.caption, i]
+            [pid, g.url, g.alt, g.kind ?? "image", g.caption, i]
           );
         }
       }
