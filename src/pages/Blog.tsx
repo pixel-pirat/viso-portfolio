@@ -2,16 +2,16 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import SectionHeader from "@/components/SectionHeader";
-import { useStudio } from "@/store/StudioStore";
+import { usePosts } from "@/lib/useData";
 import { cn } from "@/lib/utils";
 
 const categories = ["All", "Design", "Engineering", "Branding", "Process"] as const;
 
 const Blog = () => {
-  const { state } = useStudio();
-  const published = state.posts.filter((p) => p.isPublished);
+  const { data: allPosts = [] } = usePosts();
+  const published = allPosts.filter((p: { isPublished?: boolean; is_published?: boolean }) => p.isPublished ?? p.is_published ?? true);
   const [filter, setFilter] = useState<(typeof categories)[number]>("All");
-  const filtered = filter === "All" ? published : published.filter((p) => p.category === filter);
+  const filtered = filter === "All" ? published : published.filter((p: { category: string }) => p.category === filter);
 
   return (
     <>
@@ -44,7 +44,7 @@ const Blog = () => {
 
       <section className="container-studio pb-24">
         <div className="grid gap-5">
-          {filtered.map((p, i) => (
+          {filtered.map((p: { slug: string; category: string; date?: string; published_at?: string; readTime?: string; read_time?: string; title: string; excerpt: string }, i: number) => (
             <Link
               key={p.slug}
               to={`/blog/${p.slug}`}

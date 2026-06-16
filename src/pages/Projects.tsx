@@ -3,15 +3,15 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
-import { useStudio } from "@/store/StudioStore";
+import { useProjects } from "@/lib/useData";
 import { cn } from "@/lib/utils";
 
 const categories = ["All", "Web", "Mobile", "Branding", "Media"] as const;
 
 const Projects = () => {
-  const { state } = useStudio();
+  const { data: projects = [] } = useProjects();
   const [filter, setFilter] = useState<(typeof categories)[number]>("All");
-  const filtered = filter === "All" ? state.projects : state.projects.filter((p) => p.category === filter);
+  const filtered = filter === "All" ? projects : projects.filter((p: { category: string }) => p.category === filter);
 
   return (
     <>

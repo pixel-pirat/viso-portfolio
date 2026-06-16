@@ -2,11 +2,11 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
-import { useStudio } from "@/store/StudioStore";
+import { useServices } from "@/lib/useData";
 import { getIcon } from "@/lib/icons";
 
 const Services = () => {
-  const { state } = useStudio();
+  const { data: services = [] } = useServices();
   return (
     <>
       <section className="container-studio pt-20 pb-12">
@@ -19,7 +19,7 @@ const Services = () => {
 
       <section className="container-studio pb-24">
         <div className="grid md:grid-cols-2 gap-5">
-          {state.services.map((s, i) => {
+          {services.map((s: { slug: string; icon: string; title: string; short: string; tiers: { id: string; name: string; price: string; highlighted?: boolean }[] }, i: number) => {
             const Icon = getIcon(s.icon);
             return (
               <Link key={s.slug} to={`/services/${s.slug}`} className="group surface-card p-8 block">
