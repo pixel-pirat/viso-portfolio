@@ -6,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudio } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { stageLabel, visibilityLabel } from "@/lib/collab";
 import { toast } from "@/hooks/use-toast";
 
 const CollaborationsAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { updateCollabStatus, resolveReport: apiResolveReport } = useApi();
   const [filter, setFilter] = useState<"all" | "active" | "flagged" | "removed">("all");
 
   const collabs = useMemo(() => {
@@ -22,18 +24,12 @@ const CollaborationsAdmin = () => {
   const reports = state.collaborationReports;
 
   const setStatus = (id: string, status: "active" | "flagged" | "removed") => {
-    setState((s) => ({
-      ...s,
-      collaborations: s.collaborations.map((c) => c.id === id ? { ...c, status } : c),
-    }));
+    updateCollabStatus(id, status);
     toast({ title: `Collaboration ${status}` });
   };
 
   const resolveReport = (id: string, status: "reviewed" | "dismissed") => {
-    setState((s) => ({
-      ...s,
-      collaborationReports: s.collaborationReports.map((r) => r.id === id ? { ...r, status } : r),
-    }));
+    apiResolveReport(id, status);
   };
 
   return (

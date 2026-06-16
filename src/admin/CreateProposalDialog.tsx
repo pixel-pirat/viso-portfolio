@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useStudio, uid } from "@/store/StudioStore";
 import { useAdminAuth } from "./AdminAuth";
+import { useApi } from "@/lib/useApi";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,8 @@ type Props = {
 };
 
 const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { saveProposal, updateBookingStatus } = useApi();
   const { accounts } = useAdminAuth();
 
   const clients = accounts.filter((a) => a.role === "client");
@@ -80,27 +82,15 @@ const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) =
       id: uid(),
       bookingId: booking?.id,
       clientId: clientId || `guest:${clientEmail.toLowerCase()}`,
-      clientName,
-      clientEmail,
-      serviceSlug,
-      tierId,
-      title,
-      summary,
+      clientName, clientEmail, serviceSlug, tierId, title, summary,
       scope: scopeText.split("\n").map((s) => s.trim()).filter(Boolean),
-      price,
-      timelineWeeks,
+      price, timelineWeeks,
       status: sendNow ? "sent" : "draft",
       createdAt: new Date().toISOString(),
     };
 
-    setState((s) => ({
-      ...s,
-      proposals: [proposal, ...s.proposals],
-      bookings: booking
-        ? s.bookings.map((b) => b.id === booking.id ? { ...b, status: "replied" } : b)
-        : s.bookings,
-    }));
-
+    await saveProposal(proposal, true);
+    if (booking) await updateBookingStatus(booking.id, "replied");
     toast({ title: sendNow ? "Proposal sent" : "Proposal saved as draft" });
     onOpenChange(false);
   };

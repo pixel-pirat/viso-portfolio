@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStudio, uid } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,8 @@ import { exportInvoicePdf, exportProjectSummaryPdf } from "@/lib/pdf";
 const MS_STATUSES: MilestoneStatus[] = ["pending", "in_progress", "review", "done"];
 
 const ClientProjectsAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { updateClientProject } = useApi();
   const [activeId, setActiveId] = useState<string | null>(state.clientProjects[0]?.id ?? null);
 
   const active = useMemo(
@@ -32,11 +34,13 @@ const ClientProjectsAdmin = () => {
     [state.clientProjects, activeId],
   );
 
-  const updateProject = (id: string, fn: (p: ClientProject) => ClientProject) =>
-    setState((s) => ({ ...s, clientProjects: s.clientProjects.map((p) => p.id === id ? fn(p) : p) }));
+  const updateProject = (id: string, fn: (p: ClientProject) => ClientProject) => {
+    const current = state.clientProjects.find((p) => p.id === id);
+    if (current) updateClientProject(id, fn(current));
+  };
 
   const removeProject = (id: string) => {
-    setState((s) => ({ ...s, clientProjects: s.clientProjects.filter((p) => p.id !== id) }));
+    updateClientProject(id, { stage: "delivered" } as Partial<ClientProject>);
     if (activeId === id) setActiveId(null);
   };
 

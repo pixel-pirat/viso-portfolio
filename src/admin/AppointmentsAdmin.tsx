@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { useStudio, uid } from "@/store/StudioStore";
+import { useStudio } from "@/store/StudioStore";
 import { useAdminAuth } from "./AdminAuth";
+import { useApi } from "@/lib/useApi";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,19 +23,16 @@ const statusColor: Record<AppointmentStatus, string> = {
 };
 
 const AppointmentsAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { updateAppointment } = useApi();
   const [reschedule, setReschedule] = useState<Appointment | null>(null);
 
   const upcoming = useMemo(
-    () =>
-      [...state.appointments].sort(
-        (a, b) => +new Date(`${a.date}T${a.time}`) - +new Date(`${b.date}T${b.time}`),
-      ),
+    () => [...state.appointments].sort((a, b) => +new Date(`${a.date}T${a.time}`) - +new Date(`${b.date}T${b.time}`)),
     [state.appointments],
   );
 
-  const update = (id: string, patch: Partial<Appointment>) =>
-    setState((s) => ({ ...s, appointments: s.appointments.map((a) => a.id === id ? { ...a, ...patch } : a) }));
+  const update = (id: string, patch: Partial<Appointment>) => updateAppointment(id, patch);
 
   const decide = (a: Appointment, status: AppointmentStatus) => {
     update(a.id, { status });
