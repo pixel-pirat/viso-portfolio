@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import SectionHeader from "@/components/SectionHeader";
 import CTASection from "@/components/CTASection";
 import { useStudio } from "@/store/StudioStore";
+import { useProjects, usePosts, useHero, useSettings, useServices } from "@/lib/useData";
 import { getIcon } from "@/lib/icons";
 import heroTech from "@/assets/hero-3d-studio.jpg";
 
@@ -18,7 +19,16 @@ const timeAgo = (iso: string) => {
 
 const Home = () => {
   const { state } = useStudio();
-  const slides = state.hero.slides;
+  const { data: heroData } = useHero();
+  const { data: projects = [] } = useProjects();
+  const { data: posts = [] } = usePosts();
+  const { data: services = [] } = useServices();
+  const { data: settings } = useSettings();
+
+  const slides = heroData?.slides ?? state.hero.slides;
+  const activity = heroData?.activity ?? state.hero.activity;
+  const currentSettings = settings ?? state.settings;
+
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
@@ -28,11 +38,13 @@ const Home = () => {
   }, [slides.length]);
 
   const current = slides[idx] ?? slides[0];
-  const featuredProjects = (state.projects.filter((p) => p.isFeatured).length
-    ? state.projects.filter((p) => p.isFeatured)
-    : state.projects
+  const featuredProjects = ((projects as { isFeatured?: boolean; is_featured?: boolean }[])
+    .filter((p) => p.isFeatured ?? p.is_featured).length
+      ? (projects as { isFeatured?: boolean; is_featured?: boolean }[]).filter((p) => p.isFeatured ?? p.is_featured)
+      : projects
   ).slice(0, 4);
-  const featuredPosts = state.posts.filter((p) => p.isPublished).slice(0, 3);
+  const featuredPosts = (posts as { isPublished?: boolean; is_published?: boolean }[])
+    .filter((p) => p.isPublished ?? p.is_published ?? true).slice(0, 3);
 
   return (
     <>
@@ -79,16 +91,16 @@ const Home = () => {
             </div>
 
             {/* Activity ticker */}
-            {state.hero.activity.length > 0 && (
+            {activity.length > 0 && (
               <div className="surface-card p-4 max-w-xl">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-2">
                   <Activity size={12} className="text-primary" /> Live from the studio
                 </div>
                 <ul className="space-y-1.5">
-                  {state.hero.activity.slice(0, 3).map((a) => (
+                  {activity.slice(0, 3).map((a: { id: string; text: string; created_at?: string; timestamp?: string }) => (
                     <li key={a.id} className="text-sm flex items-center justify-between gap-3">
                       <span className="truncate">{a.text}</span>
-                      <span className="text-xs text-muted-foreground shrink-0">{timeAgo(a.timestamp)}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{timeAgo(a.created_at ?? a.timestamp ?? new Date().toISOString())}</span>
                     </li>
                   ))}
                 </ul>
@@ -115,10 +127,10 @@ const Home = () => {
       <section className="container-studio">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border rounded-2xl overflow-hidden border border-border">
           {[
-            { v: `${state.projects.length}+`, l: "Projects shipped" },
-            { v: `${state.services.length}`, l: "Services" },
+            { v: `${projects.length}+`, l: "Projects shipped" },
+            { v: `${services.length}`, l: "Services" },
             { v: "4.9★", l: "Avg. rating" },
-            { v: `${state.settings.developer.yearsExperience} yrs`, l: "In the craft" },
+            { v: `${currentSettings.developer.yearsExperience} yrs`, l: "In the craft" },
           ].map((s) => (
             <div key={s.l} className="bg-card p-6 text-center">
               <div className="text-3xl md:text-4xl font-display font-bold text-gradient-brand">{s.v}</div>
@@ -142,21 +154,14 @@ const Home = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {featuredProjects.map((p, i) => (
+          {(featuredProjects as { slug: string; coverImage?: string; cover_image?: string; category: string; title: string; excerpt: string }[]).map((p, i) => (
             <Link key={p.slug} to={`/projects/${p.slug}`} className="group surface-card p-8 block">
               <div className="aspect-[16/10] mb-6 rounded-xl bg-gradient-to-br from-primary/20 via-secondary to-accent-purple/20 grid place-items-center relative overflow-hidden">
                 <div className="absolute inset-0 grid-bg opacity-50" />
-                {p.coverImage ? (
-                  <img
-                    src={p.coverImage}
-                    alt={p.title}
-                    className="absolute inset-0 h-full w-full object-cover"
-                    loading="lazy"
-                  />
+                {(p.coverImage ?? p.cover_image) ? (
+                  <img src={p.coverImage ?? p.cover_image} alt={p.title} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                 ) : (
-                  <span className="relative font-display text-6xl font-bold text-gradient">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+                  <span className="relative font-display text-6xl font-bold text-gradient">{String(i + 1).padStart(2, "0")}</span>
                 )}
               </div>
               <div className="flex items-center justify-between">
@@ -180,7 +185,7 @@ const Home = () => {
           description="From identity to launch, we cover the full stack of building modern digital products."
         />
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
-          {state.services.map((s) => {
+          {(services as { slug: string; icon: string; title: string; short: string }[]).map((s) => {
             const Icon = getIcon(s.icon);
             return (
               <Link key={s.slug} to={`/services/${s.slug}`} className="group surface-card p-6 block">
@@ -211,18 +216,16 @@ const Home = () => {
           </Button>
         </div>
         <div className="grid md:grid-cols-3 gap-5">
-          {featuredPosts.map((p) => (
+          {(featuredPosts as { slug: string; category: string; readTime?: string; read_time?: string; title: string; excerpt: string; date?: string; published_at?: string }[]).map((p) => (
             <Link key={p.slug} to={`/blog/${p.slug}`} className="group surface-card p-6 block">
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="text-primary">{p.category}</span>
                 <span>•</span>
-                <span>{p.readTime}</span>
+                <span>{p.readTime ?? p.read_time}</span>
               </div>
-              <h3 className="font-display text-xl font-semibold mt-4 group-hover:text-primary transition-colors">
-                {p.title}
-              </h3>
+              <h3 className="font-display text-xl font-semibold mt-4 group-hover:text-primary transition-colors">{p.title}</h3>
               <p className="text-sm text-muted-foreground mt-2">{p.excerpt}</p>
-              <div className="mt-6 text-xs text-muted-foreground">{p.date}</div>
+              <div className="mt-6 text-xs text-muted-foreground">{p.date ?? p.published_at}</div>
             </Link>
           ))}
         </div>

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudio } from "@/store/StudioStore";
+import { useCollaborations } from "@/lib/useData";
 import { useAdminAuth } from "@/admin/AdminAuth";
 import {
   CATEGORIES, STAGES, hasConsent, isVisibleTo, stageLabel,

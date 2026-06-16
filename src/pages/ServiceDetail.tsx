@@ -4,14 +4,13 @@ import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CTASection from "@/components/CTASection";
 import BookingDialog from "@/components/BookingDialog";
-import { useStudio } from "@/store/StudioStore";
+import { useService } from "@/lib/useData";
 import { getIcon } from "@/lib/icons";
 import type { ServiceTier } from "@/store/types";
 
 const ServiceDetail = () => {
   const { slug } = useParams();
-  const { state } = useStudio();
-  const service = state.services.find((s) => s.slug === slug);
+  const { data: service } = useService(slug ?? "");
   const [bookingTier, setBookingTier] = useState<ServiceTier | null>(null);
 
   if (!service) {

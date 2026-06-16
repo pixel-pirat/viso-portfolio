@@ -55,7 +55,7 @@ const Blog = () => {
                 <div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="text-primary uppercase tracking-widest">{p.category}</span>
-                    <span>•</span><span>{p.date}</span><span>•</span><span>{p.readTime}</span>
+                    <span>•</span><span>{p.date ?? p.published_at}</span><span>•</span><span>{p.readTime ?? p.read_time}</span>
                   </div>
                   <h2 className="font-display text-2xl md:text-3xl font-semibold mt-3 group-hover:text-primary transition-colors">
                     {p.title}

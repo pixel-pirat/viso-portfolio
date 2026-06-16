@@ -1,12 +1,11 @@
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import CTASection from "@/components/CTASection";
-import { useStudio } from "@/store/StudioStore";
+import { usePost } from "@/lib/useData";
 
 const BlogDetail = () => {
   const { slug } = useParams();
-  const { state } = useStudio();
-  const post = state.posts.find((p) => p.slug === slug);
+  const { data: post } = usePost(slug ?? "");
 
   if (!post) {
     return (
@@ -24,7 +23,8 @@ const BlogDetail = () => {
         <div className="mt-8 space-y-6">
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="text-primary uppercase tracking-widest">{post.category}</span>
-            <span>•</span><span>{post.date}</span><span>•</span><span>{post.readTime}</span>
+            <span>•</span><span>{(post as { date?: string; published_at?: string }).date ?? (post as { published_at?: string }).published_at}</span>
+            <span>•</span><span>{(post as { readTime?: string; read_time?: string }).readTime ?? (post as { read_time?: string }).read_time}</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight text-gradient leading-tight">{post.title}</h1>
           <p className="text-xl text-muted-foreground">{post.excerpt}</p>
@@ -36,7 +36,7 @@ const BlogDetail = () => {
         </div>
 
         <div className="mt-12 space-y-6 text-lg leading-relaxed text-muted-foreground">
-          {post.content.map((para, i) => (
+          {(Array.isArray(post.content) ? post.content : JSON.parse(post.content as unknown as string || "[]")).map((para: string, i: number) => (
             <p key={i} className={i === 0 ? "text-foreground text-xl" : ""}>{para}</p>
           ))}
         </div>

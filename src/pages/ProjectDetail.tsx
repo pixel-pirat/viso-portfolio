@@ -3,12 +3,11 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CTASection from "@/components/CTASection";
 import MediaGallery from "@/components/MediaGallery";
-import { useStudio } from "@/store/StudioStore";
+import { useProject } from "@/lib/useData";
 
 const ProjectDetail = () => {
   const { slug } = useParams();
-  const { state } = useStudio();
-  const project = state.projects.find((p) => p.slug === slug);
+  const { data: project } = useProject(slug ?? "");
 
   if (!project) {
     return (
