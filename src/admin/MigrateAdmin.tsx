@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useStudio } from "@/store/StudioStore";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import {
   projectsApi, servicesApi, blogApi, heroApi,
-  bookingsApi, settingsApi,
+  bookingsApi, settingsApi, authApi, setToken, getToken,
 } from "@/lib/api";
-import { CheckCircle2, AlertCircle, Loader2, DatabaseZap } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, DatabaseZap, LogIn } from "lucide-react";
 
 type StepStatus = "idle" | "running" | "done" | "error";
 
@@ -26,6 +28,9 @@ const MigrateAdmin = () => {
   const { state } = useStudio();
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
+  const [email, setEmail] = useState("alex@studio.com");
+  const [password, setPassword] = useState("");
+  const [authed, setAuthed] = useState(!!getToken());
   const [steps, setSteps] = useState<Step[]>([
     { key: "settings", label: "Settings & brand", status: "idle" },
     { key: "services", label: "Services & tiers", status: "idle" },
@@ -37,6 +42,18 @@ const MigrateAdmin = () => {
 
   const setStep = (key: string, patch: Partial<Step>) =>
     setSteps((prev) => prev.map((s) => s.key === key ? { ...s, ...patch } : s));
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await authApi.login(email, password);
+      setToken(res.token);
+      setAuthed(true);
+      toast({ title: "Authenticated — ready to migrate" });
+    } catch {
+      toast({ title: "Login failed", description: "Check your email and password.", variant: "destructive" });
+    }
+  };
 
   const run = async () => {
     setRunning(true);
@@ -203,6 +220,19 @@ const MigrateAdmin = () => {
         description="One-time sync. Reads all data from this browser's localStorage and pushes it to NeonDB so it's visible on every device."
       />
 
+      {/* ── Login gate ── */}
+      {!authed && (
+        <div className="surface-card p-6 max-w-md mb-6">
+          <h2 className="font-display font-semibold mb-1 flex items-center gap-2"><LogIn size={16} /> Authenticate first</h2>
+          <p className="text-sm text-muted-foreground mb-4">The migration needs your admin credentials to write to the database.</p>
+          <form onSubmit={handleLogin} className="space-y-3">
+            <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+            <div><Label>Password</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+            <Button type="submit" variant="hero" className="w-full">Login & continue</Button>
+          </form>
+        </div>
+      )}
+
       <div className="surface-card p-6 max-w-2xl space-y-6">
         <div className="rounded-lg bg-secondary border border-border p-4 text-sm text-muted-foreground space-y-1">
           <p>This will push the following from your browser to the database:</p>
@@ -254,7 +284,7 @@ const MigrateAdmin = () => {
         <Button
           variant="hero"
           onClick={run}
-          disabled={running}
+          disabled={running || !authed}
           className="w-full sm:w-auto"
         >
           {running
