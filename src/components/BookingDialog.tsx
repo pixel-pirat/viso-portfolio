@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useStudio, uid } from "@/store/StudioStore";
 import { useAdminAuth } from "@/admin/AdminAuth";
+import { useApi } from "@/lib/useApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +19,7 @@ type Props = {
 };
 
 const BookingDialog = ({ service, tier, open, onOpenChange }: Props) => {
-  const { setState } = useStudio();
+  const { submitBooking } = useApi();
   const { session } = useAdminAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

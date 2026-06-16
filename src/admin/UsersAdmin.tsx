@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { useStudio, uid } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,26 +14,23 @@ import type { AdminUser } from "@/store/types";
 const ROLES: AdminUser["role"][] = ["admin", "editor", "viewer"];
 
 const UsersAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { saveUser, deleteUser } = useApi();
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [open, setOpen] = useState(false);
 
   const newUser = (): AdminUser => ({ id: uid(), name: "", email: "", role: "editor", createdAt: new Date().toISOString() });
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.name.trim() || !editing.email.trim()) return toast({ title: "Name & email required", variant: "destructive" });
-    setState((s) => {
-      const exists = s.users.find((u) => u.id === editing.id);
-      const users = exists ? s.users.map((u) => u.id === editing.id ? editing : u) : [...s.users, editing];
-      return { ...s, users };
-    });
+    const isNew = !state.users.find((u) => u.id === editing.id);
+    await saveUser(editing, isNew);
     toast({ title: "User saved" });
     setOpen(false);
   };
 
-  const remove = (id: string) =>
-    setState((s) => ({ ...s, users: s.users.filter((u) => u.id !== id) }));
+  const remove = (id: string) => deleteUser(id);
 
   return (
     <>
