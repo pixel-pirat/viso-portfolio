@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Layers } from "lucide-react";
 import { useStudio, uid } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,29 +23,25 @@ const emptyTier = (): ServiceTier => ({
 });
 
 const ServicesAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { saveService, deleteService } = useApi();
   const [editing, setEditing] = useState<Service | null>(null);
   const [open, setOpen] = useState(false);
 
   const openNew = () => { setEditing(emptyService()); setOpen(true); };
   const openEdit = (s: Service) => { setEditing(JSON.parse(JSON.stringify(s))); setOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) return toast({ title: "Title required", variant: "destructive" });
-    const slug = editing.slug.trim() || slugify(editing.title);
-    const next: Service = { ...editing, slug };
-    setState((s) => {
-      const exists = s.services.find((x) => x.slug === slug);
-      const services = exists ? s.services.map((x) => x.slug === slug ? next : x) : [...s.services, next];
-      return { ...s, services };
-    });
+    const isNew = !state.services.find((x) => x.slug === (editing.slug || editing.title));
+    await saveService(editing, isNew);
     toast({ title: "Service saved" });
     setOpen(false);
   };
 
-  const remove = (slug: string) => {
-    setState((s) => ({ ...s, services: s.services.filter((x) => x.slug !== slug) }));
+  const remove = async (slug: string) => {
+    await deleteService(slug);
     toast({ title: "Service deleted" });
   };
 

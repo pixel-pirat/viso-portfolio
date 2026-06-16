@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStudio } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,17 +20,15 @@ const statusColor: Record<Booking["status"], string> = {
 };
 
 const BookingsAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { updateBookingStatus, deleteBooking } = useApi();
   const [filter, setFilter] = useState<Booking["status"] | "all">("all");
   const [convert, setConvert] = useState<Booking | null>(null);
 
   const bookings = filter === "all" ? state.bookings : state.bookings.filter((b) => b.status === filter);
 
-  const setStatus = (id: string, status: Booking["status"]) =>
-    setState((s) => ({ ...s, bookings: s.bookings.map((b) => b.id === id ? { ...b, status } : b) }));
-
-  const remove = (id: string) =>
-    setState((s) => ({ ...s, bookings: s.bookings.filter((b) => b.id !== id) }));
+  const setStatus = (id: string, status: Booking["status"]) => updateBookingStatus(id, status);
+  const remove = (id: string) => deleteBooking(id);
 
   return (
     <>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStudio, uid } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Send, CheckCircle2, XCircle, Rocket, FileDown } from "lucide-react";
@@ -11,61 +12,27 @@ import { realtime } from "@/lib/realtime";
 import { exportProposalPdf } from "@/lib/pdf";
 
 const ProposalsAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { updateProposalStatus, deleteProposal, startProject } = useApi();
   const [open, setOpen] = useState(false);
 
   const update = (id: string, patch: Partial<Proposal>) => {
-    setState((s) => ({ ...s, proposals: s.proposals.map((p) => p.id === id ? { ...p, ...patch } : p) }));
+    updateProposalStatus(id, patch.status as Proposal["status"], patch.decidedAt);
     if (patch.status === "sent") {
       const p = state.proposals.find((x) => x.id === id);
       if (p) {
-        realtime.publish({
-          kind: "proposal",
-          title: "New proposal received",
-          body: p.title,
-          audience: p.clientId,
-          href: "/portal/proposals",
-        });
+        import("@/lib/realtime").then(({ realtime }) => realtime.publish({
+          kind: "proposal", title: "New proposal received",
+          body: p.title, audience: p.clientId, href: "/portal/proposals",
+        }));
       }
     }
   };
 
-  const remove = (id: string) =>
-    setState((s) => ({ ...s, proposals: s.proposals.filter((p) => p.id !== id) }));
+  const remove = (id: string) => deleteProposal(id);
 
-  const startProject = (p: Proposal) => {
-    const cp: ClientProject = {
-      id: uid(),
-      proposalId: p.id,
-      clientId: p.clientId,
-      clientName: p.clientName,
-      clientEmail: p.clientEmail,
-      title: p.title,
-      serviceSlug: p.serviceSlug,
-      tierId: p.tierId,
-      stage: "kickoff",
-      progress: 5,
-      startedAt: new Date().toISOString(),
-      milestones: defaultMilestones(),
-      messages: [{
-        id: uid(),
-        authorId: "admin",
-        authorName: "Studio",
-        authorRole: "admin",
-        body: `Welcome aboard! Kicking off ${p.title}. We'll reach out shortly with the kickoff agenda.`,
-        createdAt: new Date().toISOString(),
-      }],
-      invoices: [{
-        id: uid(),
-        number: `INV-${String(state.clientProjects.length + 1).padStart(3, "0")}`,
-        description: `Deposit — ${p.title}`,
-        amount: p.price,
-        status: "sent",
-        createdAt: new Date().toISOString(),
-      }],
-    };
-    setState((s) => ({ ...s, clientProjects: [cp, ...s.clientProjects] }));
-    update(p.id, { status: "accepted", decidedAt: new Date().toISOString() });
+  const handleStartProject = (p: Proposal) => {
+    startProject(p, state.clientProjects.length);
     toast({ title: "Project started", description: `${p.clientName} now has access in their portal.` });
   };
 

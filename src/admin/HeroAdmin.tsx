@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { useStudio, uid } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,8 @@ import { toast } from "@/hooks/use-toast";
 import type { HeroSlide, ActivityItem } from "@/store/types";
 
 const HeroAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { saveSlide, deleteSlide, moveSlide, saveActivity, deleteActivity } = useApi();
   const [slide, setSlide] = useState<HeroSlide | null>(null);
   const [open, setOpen] = useState(false);
   const [activity, setActivity] = useState<ActivityItem | null>(null);
@@ -21,41 +23,25 @@ const HeroAdmin = () => {
   const newSlide = (): HeroSlide => ({ id: uid(), eyebrow: "", title: "", subtitle: "", ctaLabel: "Start a Project", ctaHref: "/contact" });
   const newActivity = (): ActivityItem => ({ id: uid(), kind: "note", text: "", timestamp: new Date().toISOString() });
 
-  const saveSlide = () => {
+  const handleSaveSlide = async () => {
     if (!slide) return;
-    setState((s) => {
-      const exists = s.hero.slides.find((x) => x.id === slide.id);
-      const slides = exists ? s.hero.slides.map((x) => x.id === slide.id ? slide : x) : [...s.hero.slides, slide];
-      return { ...s, hero: { ...s.hero, slides } };
-    });
+    const isNew = !state.hero.slides.find((x) => x.id === slide.id);
+    await saveSlide(slide, isNew);
     toast({ title: "Slide saved" });
     setOpen(false);
   };
 
-  const move = (id: string, dir: -1 | 1) => {
-    setState((s) => {
-      const slides = [...s.hero.slides];
-      const i = slides.findIndex((x) => x.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= slides.length) return s;
-      [slides[i], slides[j]] = [slides[j], slides[i]];
-      return { ...s, hero: { ...s.hero, slides } };
-    });
-  };
+  const handleMoveSlide = (id: string, dir: -1 | 1) => moveSlide(id, dir);
+  const handleDeleteSlide = (id: string) => deleteSlide(id);
 
-  const delSlide = (id: string) => setState((s) => ({ ...s, hero: { ...s.hero, slides: s.hero.slides.filter((x) => x.id !== id) } }));
-
-  const saveActivity = () => {
+  const handleSaveActivity = async () => {
     if (!activity) return;
-    setState((s) => {
-      const exists = s.hero.activity.find((x) => x.id === activity.id);
-      const arr = exists ? s.hero.activity.map((x) => x.id === activity.id ? activity : x) : [activity, ...s.hero.activity];
-      return { ...s, hero: { ...s.hero, activity: arr } };
-    });
+    const isNew = !state.hero.activity.find((x) => x.id === activity.id);
+    await saveActivity(activity, isNew);
     setAOpen(false);
   };
 
-  const delActivity = (id: string) => setState((s) => ({ ...s, hero: { ...s.hero, activity: s.hero.activity.filter((x) => x.id !== id) } }));
+  const handleDeleteActivity = (id: string) => deleteActivity(id);
 
   return (
     <>
@@ -80,12 +66,12 @@ const HeroAdmin = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex gap-1">
-                  <Button size="icon" variant="ghost" onClick={() => move(sl.id, -1)} disabled={i === 0}><ArrowUp size={14} /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => move(sl.id, 1)} disabled={i === state.hero.slides.length - 1}><ArrowDown size={14} /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => handleMoveSlide(sl.id, -1)} disabled={i === 0}><ArrowUp size={14} /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => handleMoveSlide(sl.id, 1)} disabled={i === state.hero.slides.length - 1}><ArrowDown size={14} /></Button>
                 </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" onClick={() => { setSlide(sl); setOpen(true); }}><Pencil size={13} /></Button>
-                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => delSlide(sl.id)}><Trash2 size={13} /></Button>
+                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDeleteSlide(sl.id)}><Trash2 size={13} /></Button>
                 </div>
               </div>
             </div>
@@ -108,7 +94,7 @@ const HeroAdmin = () => {
               </div>
               <div className="flex gap-1">
                 <Button size="sm" variant="outline" onClick={() => { setActivity(a); setAOpen(true); }}><Pencil size={13} /></Button>
-                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => delActivity(a.id)}><Trash2 size={13} /></Button>
+                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDeleteActivity(a.id)}><Trash2 size={13} /></Button>
               </div>
             </li>
           ))}
@@ -132,7 +118,7 @@ const HeroAdmin = () => {
           )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button variant="hero" onClick={saveSlide}>Save</Button>
+            <Button variant="hero" onClick={handleSaveSlide}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -158,7 +144,7 @@ const HeroAdmin = () => {
           )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAOpen(false)}>Cancel</Button>
-            <Button variant="hero" onClick={saveActivity}>Save</Button>
+            <Button variant="hero" onClick={handleSaveActivity}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

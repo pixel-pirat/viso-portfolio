@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { useStudio } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,35 +20,25 @@ const empty = (): BlogPost => ({
 });
 
 const BlogAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { savePost, togglePostPublish, deletePost } = useApi();
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [open, setOpen] = useState(false);
 
   const openNew = () => { setEditing(empty()); setOpen(true); };
   const openEdit = (p: BlogPost) => { setEditing({ ...p }); setOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) return toast({ title: "Title required", variant: "destructive" });
-    const slug = editing.slug.trim() || slugify(editing.title);
-    const next = { ...editing, slug };
-    setState((s) => {
-      const exists = s.posts.find((x) => x.slug === slug);
-      const posts = exists ? s.posts.map((x) => x.slug === slug ? next : x) : [next, ...s.posts];
-      return { ...s, posts };
-    });
+    const isNew = !state.posts.find((x) => x.slug === (editing.slug || editing.title));
+    await savePost(editing, isNew);
     toast({ title: "Post saved" });
     setOpen(false);
   };
 
-  const togglePublish = (slug: string) => {
-    setState((s) => ({ ...s, posts: s.posts.map((p) => p.slug === slug ? { ...p, isPublished: !p.isPublished } : p) }));
-  };
-
-  const remove = (slug: string) => {
-    setState((s) => ({ ...s, posts: s.posts.filter((p) => p.slug !== slug) }));
-    toast({ title: "Post deleted" });
-  };
+  const toggle = (slug: string, current: boolean) => togglePostPublish(slug, !current);
+  const remove = async (slug: string) => { await deletePost(slug); toast({ title: "Post deleted" }); };
 
   return (
     <>
@@ -71,7 +62,7 @@ const BlogAdmin = () => {
                 <p className="text-sm text-muted-foreground mt-1 max-w-2xl line-clamp-2">{p.excerpt}</p>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => togglePublish(p.slug)}>
+                <Button size="sm" variant="outline" onClick={() => toggle(p.slug, p.isPublished)}>
                   {p.isPublished ? <><EyeOff size={14} /> Unpublish</> : <><Eye size={14} /> Publish</>}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => openEdit(p)}><Pencil size={14} /> Edit</Button>

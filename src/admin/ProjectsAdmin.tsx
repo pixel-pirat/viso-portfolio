@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Pencil, Plus, Trash2, Star, Upload, Image as ImageIcon } from "lucide-react";
 import { useStudio } from "@/store/StudioStore";
+import { useApi } from "@/lib/useApi";
 import { PageHeader, EmptyState } from "./components/AdminUI";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,39 +27,30 @@ const empty = (): Project => ({
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 const ProjectsAdmin = () => {
-  const { state, setState } = useStudio();
+  const { state } = useStudio();
+  const { saveProject, deleteProject, toggleFeatured: apiFeatured } = useApi();
   const [editing, setEditing] = useState<Project | null>(null);
   const [open, setOpen] = useState(false);
 
   const openNew = () => { setEditing(empty()); setOpen(true); };
   const openEdit = (p: Project) => { setEditing({ ...p }); setOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!editing) return;
     if (!editing.title.trim()) return toast({ title: "Title required", variant: "destructive" });
-    const slug = editing.slug.trim() || slugify(editing.title);
-    const next: Project = { ...editing, slug };
-    setState((s) => {
-      const exists = s.projects.find((p) => p.slug === slug);
-      const projects = exists
-        ? s.projects.map((p) => (p.slug === slug ? next : p))
-        : [next, ...s.projects];
-      return { ...s, projects };
-    });
+    const isNew = !state.projects.find((p) => p.slug === (editing.slug || editing.title));
+    await saveProject(editing, isNew);
     toast({ title: "Project saved" });
     setOpen(false);
   };
 
-  const remove = (slug: string) => {
-    setState((s) => ({ ...s, projects: s.projects.filter((p) => p.slug !== slug) }));
+  const remove = async (slug: string) => {
+    await deleteProject(slug);
     toast({ title: "Project deleted" });
   };
 
-  const toggleFeatured = (slug: string) => {
-    setState((s) => ({
-      ...s,
-      projects: s.projects.map((p) => p.slug === slug ? { ...p, isFeatured: !p.isFeatured } : p),
-    }));
+  const toggleFeatured = (slug: string, current: boolean) => {
+    apiFeatured(slug, !current);
   };
 
   return (
@@ -91,7 +83,7 @@ const ProjectsAdmin = () => {
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{p.excerpt}</p>
                 </div>
                 <button
-                  onClick={() => toggleFeatured(p.slug)}
+                  onClick={() => toggleFeatured(p.slug, !!p.isFeatured)}
                   aria-label="Toggle featured"
                   className={`p-2 rounded-md border ${p.isFeatured ? "bg-primary text-primary-foreground border-transparent" : "border-border text-muted-foreground"}`}
                 >
