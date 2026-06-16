@@ -122,7 +122,9 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: Nex
   try {
     const { title, category, excerpt, problem, solution, cover_image, is_featured, is_published, published_at, tools, results, gallery } = req.body;
     const resolved = await queryOne<{ id: string }>(
-      `SELECT id FROM projects WHERE id=$1 OR slug=$1 LIMIT 1`, [req.params.id]
+      `SELECT id FROM projects WHERE slug=$1 LIMIT 1`, [req.params.id]
+    ) ?? await queryOne<{ id: string }>(
+      `SELECT id FROM projects WHERE id::text=$1 LIMIT 1`, [req.params.id]
     );
     if (!resolved) { res.status(404).json({ error: "Project not found" }); return; }
     const pid = resolved.id;

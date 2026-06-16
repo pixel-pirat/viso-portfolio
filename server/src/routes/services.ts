@@ -114,9 +114,12 @@ router.post("/", requireAdmin, async (req: Request, res: Response, next: NextFun
 router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, short, icon, sort_order, is_published, problems, process: steps, tiers } = req.body;
-    // Resolve to UUID — accept both uuid and slug
+    // Resolve by slug first, then by UUID cast-safe lookup
     const resolved = await queryOne<{ id: string }>(
-      `SELECT id FROM services WHERE id=$1 OR slug=$1 LIMIT 1`,
+      `SELECT id FROM services WHERE slug=$1 LIMIT 1`,
+      [req.params.id]
+    ) ?? await queryOne<{ id: string }>(
+      `SELECT id FROM services WHERE id::text=$1 LIMIT 1`,
       [req.params.id]
     );
     if (!resolved) { res.status(404).json({ error: "Service not found" }); return; }

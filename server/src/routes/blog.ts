@@ -71,7 +71,9 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response, next: Nex
   try {
     const { title, excerpt, content, category, read_time, cover_image, is_published, published_at } = req.body;
     const resolved = await queryOne<{ id: string }>(
-      `SELECT id FROM blog_posts WHERE id=$1 OR slug=$1 LIMIT 1`, [req.params.id]
+      `SELECT id FROM blog_posts WHERE slug=$1 LIMIT 1`, [req.params.id]
+    ) ?? await queryOne<{ id: string }>(
+      `SELECT id FROM blog_posts WHERE id::text=$1 LIMIT 1`, [req.params.id]
     );
     if (!resolved) { res.status(404).json({ error: "Post not found" }); return; }
     await query(

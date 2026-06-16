@@ -74,29 +74,22 @@ const MigrateAdmin = () => {
       let count = 0;
       for (const svc of state.services) {
         const slug = svc.slug || slugify(svc.title);
-        try {
-          await servicesApi.update(slug, {
-            slug, title: svc.title, short: svc.short, icon: svc.icon,
-            problems: svc.problems,
-            process: svc.process.map((p) => ({ step: p.step, text: p.text })),
-            tiers: svc.tiers.map((t) => ({
-              id: t.id, name: t.name, price: t.price,
-              description: t.description, features: t.features,
-              highlighted: t.highlighted, ctaLabel: t.ctaLabel,
-            })),
-          });
-        } catch {
-          // Service doesn't exist yet — create it
-          await servicesApi.create({
-            slug, title: svc.title, short: svc.short, icon: svc.icon,
-            problems: svc.problems,
-            process: svc.process.map((p) => ({ step: p.step, text: p.text })),
-            tiers: svc.tiers.map((t) => ({
-              id: t.id, name: t.name, price: t.price,
-              description: t.description, features: t.features,
-              highlighted: t.highlighted, ctaLabel: t.ctaLabel,
-            })),
-          });
+        const payload = {
+          slug, title: svc.title, short: svc.short, icon: svc.icon,
+          problems: svc.problems,
+          process: svc.process.map((p) => ({ step: p.step, text: p.text })),
+          tiers: svc.tiers.map((t) => ({
+            id: t.id, name: t.name, price: t.price,
+            description: t.description, features: t.features,
+            highlighted: t.highlighted, ctaLabel: t.ctaLabel,
+          })),
+        };
+        // Try update by slug first; if not found create
+        const existing = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/services/${slug}`);
+        if (existing.ok) {
+          await servicesApi.update(slug, payload);
+        } else {
+          await servicesApi.create(payload);
         }
         count++;
       }
@@ -119,9 +112,10 @@ const MigrateAdmin = () => {
           tools: p.tools, results: p.results,
           gallery: p.gallery?.map((g) => ({ url: g.url, alt: g.caption, kind: g.kind, caption: g.caption })) ?? [],
         };
-        try {
+        const existing = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/projects/${slug}`);
+        if (existing.ok) {
           await projectsApi.update(slug, payload);
-        } catch {
+        } else {
           await projectsApi.create(payload);
         }
         count++;
@@ -143,9 +137,10 @@ const MigrateAdmin = () => {
           read_time: post.readTime, is_published: post.isPublished,
           published_at: post.date,
         };
-        try {
+        const existing = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/blog/${slug}`);
+        if (existing.ok) {
           await blogApi.update(slug, payload);
-        } catch {
+        } else {
           await blogApi.create(payload);
         }
         count++;
@@ -164,20 +159,15 @@ const MigrateAdmin = () => {
           eyebrow: slide.eyebrow, title: slide.title,
           subtitle: slide.subtitle, cta_label: slide.ctaLabel, cta_href: slide.ctaHref,
         };
-        try {
-          await heroApi.updateSlide(slide.id, payload);
-        } catch {
-          await heroApi.createSlide(payload);
-        }
+        // localStorage slide IDs (s1, s2...) are not DB UUIDs — always create
+        await heroApi.createSlide(payload);
         count++;
       }
       for (const item of state.hero.activity) {
         try {
           await heroApi.addActivity({ kind: item.kind, text: item.text });
           count++;
-        } catch {
-          // ignore duplicates
-        }
+        } catch { /* ignore duplicates */ }
       }
       setStep("hero", { status: "done", count });
     } catch (e) {

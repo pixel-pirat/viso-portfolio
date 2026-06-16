@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { query } from "../db/pool";
+import { query, queryOne } from "../db/pool";
 import { requireAdmin } from "../middleware/auth";
 
 const router = Router();
@@ -35,11 +35,16 @@ router.post("/slides", requireAdmin, async (req: Request, res: Response, next: N
 router.patch("/slides/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { eyebrow, title, subtitle, cta_label, cta_href, sort_order } = req.body;
+    // Try UUID cast-safe lookup only
+    const resolved = await queryOne<{ id: string }>(
+      `SELECT id FROM hero_slides WHERE id::text=$1 LIMIT 1`, [req.params.id]
+    );
+    if (!resolved) { res.status(404).json({ error: "Slide not found" }); return; }
     await query(
       `UPDATE hero_slides SET eyebrow=COALESCE($1,eyebrow), title=COALESCE($2,title), subtitle=COALESCE($3,subtitle),
        cta_label=COALESCE($4,cta_label), cta_href=COALESCE($5,cta_href), sort_order=COALESCE($6,sort_order)
        WHERE id=$7`,
-      [eyebrow, title, subtitle, cta_label, cta_href, sort_order, req.params.id]
+      [eyebrow, title, subtitle, cta_label, cta_href, sort_order, resolved.id]
     );
     res.json({ ok: true });
   } catch (err) {
