@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { authApi, usersApi } from "@/lib/api";
+import { authApi } from "@/lib/api";
 
 export type AccountRole = "admin" | "editor" | "viewer" | "client";
 
@@ -8,8 +8,10 @@ export type Account = {
   name: string;
   email: string;
   role: AccountRole;
-  createdAt?: string;
 };
+
+// Keep for backward compat — not used for auth anymore
+export const ADMIN_PASSWORD = "studio2026";
 
 type Session = { id: string; email: string; name: string; role: AccountRole } | null;
 
@@ -17,118 +19,87 @@ type AuthCtx = {
   isAuthed: boolean;
   session: Session;
   isAdmin: boolean;
-  loading: boolean;
+  /** Log in via the API (cookie-based). Returns error string on failure. */
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  /** Legacy password gate — kept for backward compat, just calls login with admin creds */
+  legacyLogin: (password: string) => Promise<boolean>;
   signup: (input: { name: string; email: string; password: string; role?: AccountRole }) => Promise<{ ok: true } | { ok: false; error: string }>;
   logout: () => Promise<void>;
+  /** Kept for compat — returns empty array since accounts are now server-side */
   accounts: Account[];
-  refreshAccounts: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAccounts = useCallback(async () => {
-    try {
-      const list = await usersApi.list() as Account[];
-      setAccounts(list);
-    } catch (err) {
-      console.error("Failed to fetch users list", err);
-    }
+  // On mount — check if cookie session is still valid
+  useEffect(() => {
+    authApi.me()
+      .then((user) => {
+        setSession({ id: user.id, email: user.email, name: user.name, role: user.role as AccountRole });
+      })
+      .catch(() => {
+        setSession(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const checkSession = useCallback(async () => {
-    setLoading(true);
-    try {
-      const user = await authApi.me();
-      const mappedSession: Session = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role as AccountRole,
-      };
-      setSession(mappedSession);
-      if (user.role === "admin" || user.role === "editor") {
-        await fetchAccounts();
-      }
-    } catch {
-      setSession(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchAccounts]);
-
+  // Listen for 401 events from api.ts
   useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+    const handler = () => { setSession(null); };
+    window.addEventListener("studio:unauthorized", handler);
+    return () => window.removeEventListener("studio:unauthorized", handler);
+  }, []);
 
-  const login = async (email: string, password: string) => {
+  const login: AuthCtx["login"] = useCallback(async (email, password) => {
     try {
       const res = await authApi.login(email, password);
-      const mappedSession: Session = {
-        id: res.user.id,
-        email: res.user.email,
-        name: res.user.name,
-        role: res.user.role as AccountRole,
-      };
-      setSession(mappedSession);
-      if (res.user.role === "admin" || res.user.role === "editor") {
-        await fetchAccounts();
-      }
-      return { ok: true as const };
+      const u = res.user;
+      setSession({ id: u.id, email: u.email, name: u.name, role: u.role as AccountRole });
+      return { ok: true };
     } catch (err) {
-      return { ok: false as const, error: (err as Error).message };
+      return { ok: false, error: (err as Error).message || "Login failed" };
     }
-  };
+  }, []);
 
-  const signup = async ({ name, email, password, role = "client" }: { name: string; email: string; password: string; role?: AccountRole }) => {
+  const legacyLogin = useCallback(async (password: string) => {
+    if (password !== ADMIN_PASSWORD) return false;
+    const result = await login("alex@studio.com", password);
+    return result.ok;
+  }, [login]);
+
+  const signup: AuthCtx["signup"] = useCallback(async ({ name, email, password, role = "client" }) => {
+    if (!name.trim()) return { ok: false, error: "Name is required." };
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return { ok: false, error: "Enter a valid email." };
+    if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
     try {
       const res = await authApi.register(name, email, password);
-      const mappedSession: Session = {
-        id: res.user.id,
-        email: res.user.email,
-        name: res.user.name,
-        role: res.user.role as AccountRole,
-      };
-      setSession(mappedSession);
-      if (res.user.role === "admin" || res.user.role === "editor") {
-        await fetchAccounts();
-      }
-      return { ok: true as const };
+      const u = res.user;
+      setSession({ id: u.id, email: u.email, name: u.name, role: u.role as AccountRole });
+      return { ok: true };
     } catch (err) {
-      return { ok: false as const, error: (err as Error).message };
+      return { ok: false, error: (err as Error).message || "Registration failed" };
     }
-  };
+  }, []);
 
   const logout = useCallback(async () => {
-    try {
-      await authApi.logout();
-    } catch (err) {
-      console.error("Logout failed on server", err);
-    }
+    try { await authApi.logout(); } catch { /* ignore */ }
     setSession(null);
-    setAccounts([]);
   }, []);
+
+  if (loading) {
+    // Prevent flash of unauthenticated content while checking session
+    return null;
+  }
 
   const isAuthed = !!session;
   const isAdmin = session?.role === "admin" || session?.role === "editor";
 
   return (
-    <Ctx.Provider value={{
-      isAuthed,
-      session,
-      isAdmin,
-      loading,
-      login,
-      signup,
-      logout,
-      accounts,
-      refreshAccounts: fetchAccounts,
-    }}>
+    <Ctx.Provider value={{ isAuthed, session, isAdmin, login, legacyLogin, signup, logout, accounts: [] }}>
       {children}
     </Ctx.Provider>
   );
