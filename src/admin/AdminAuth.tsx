@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { authApi } from "@/lib/api";
+import { authApi, setToken, clearToken, getToken } from "@/lib/api";
 
 export type AccountRole = "admin" | "editor" | "viewer" | "client";
 
@@ -35,13 +35,16 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session>(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount — check if cookie session is still valid
+  // On mount — restore session from token in sessionStorage
   useEffect(() => {
+    const token = getToken();
+    if (!token) { setLoading(false); return; }
     authApi.me()
       .then((user) => {
         setSession({ id: user.id, email: user.email, name: user.name, role: user.role as AccountRole });
       })
       .catch(() => {
+        clearToken();
         setSession(null);
       })
       .finally(() => setLoading(false));
@@ -57,6 +60,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const login: AuthCtx["login"] = useCallback(async (email, password) => {
     try {
       const res = await authApi.login(email, password);
+      setToken(res.token); // store in sessionStorage + memory
       const u = res.user;
       setSession({ id: u.id, email: u.email, name: u.name, role: u.role as AccountRole });
       return { ok: true };
@@ -77,6 +81,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
     try {
       const res = await authApi.register(name, email, password);
+      setToken(res.token);
       const u = res.user;
       setSession({ id: u.id, email: u.email, name: u.name, role: u.role as AccountRole });
       return { ok: true };

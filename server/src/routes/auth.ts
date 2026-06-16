@@ -60,7 +60,7 @@ router.post(
         path: "/",
       });
 
-      res.status(201).json({ user: { id: account.id, name: account.name, email: account.email, role: account.role } });
+      res.status(201).json({ token, user: { id: account.id, name: account.name, email: account.email, role: account.role } });
     } catch (err) {
       next(err);
     }
@@ -115,7 +115,7 @@ router.post(
         path: "/",
       });
 
-      res.json({ user: { id: account.id, name: account.name, email: account.email, role: account.role } });
+      res.json({ token, user: { id: account.id, name: account.name, email: account.email, role: account.role } });
     } catch (err) {
       next(err);
     }
