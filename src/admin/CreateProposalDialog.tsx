@@ -73,7 +73,7 @@ const CreateProposalDialog = ({ open, onOpenChange, booking, initial }: Props) =
     setPrice((cur) => cur || t.price);
   }, [service, tier]);
 
-  const submit = (e: React.FormEvent, sendNow: boolean) => {
+  const submit = async (e: React.FormEvent, sendNow: boolean) => {
     e.preventDefault();
     if (!service || !tier) return toast({ title: "Pick a service and tier", variant: "destructive" });
     if (!clientName || !clientEmail) return toast({ title: "Client name and email required", variant: "destructive" });
