@@ -98,6 +98,12 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`🚀 API server running on port ${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || "development"}`);
+
+  // Keep Render free tier awake
+  if (process.env.NODE_ENV === "production" && process.env.SERVER_URL) {
+    const { startKeepAlive } = require("./lib/keepAlive");
+    startKeepAlive(process.env.SERVER_URL);
+  }
 });
 
 export default app;

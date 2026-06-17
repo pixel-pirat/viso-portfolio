@@ -17,3 +17,5 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: SERVER_URL
+        value: https://viso-portfolio.onrender.com
