@@ -16,6 +16,8 @@ type AuthCtx = {
   isAuthed: boolean;
   session: Session;
   isAdmin: boolean;
+  /** True until the initial /api/auth/me session check resolves. */
+  loading: boolean;
   /** Log in via the API (cookie-based). Returns error string on failure. */
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   signup: (input: { name: string; email: string; password: string; role?: AccountRole }) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -80,16 +82,14 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
   }, []);
 
-  if (loading) {
-    // Prevent flash of unauthenticated content while checking session
-    return null;
-  }
-
   const isAuthed = !!session;
   const isAdmin = session?.role === "admin" || session?.role === "editor";
 
+  // Note: we don't block rendering on `loading` here — the public site
+  // shouldn't wait on an auth check nobody but /admin and /portal need.
+  // Those layouts read `loading` themselves and show their own spinner.
   return (
-    <Ctx.Provider value={{ isAuthed, session, isAdmin, login, signup, logout, accounts: [] }}>
+    <Ctx.Provider value={{ isAuthed, session, isAdmin, loading, login, signup, logout, accounts: [] }}>
       {children}
     </Ctx.Provider>
   );

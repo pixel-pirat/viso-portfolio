@@ -168,6 +168,7 @@ export const collaborationsApi = {
   update:        (id: string, data: unknown)      => patch(`/api/collaborations/${id}`, data),
   request:       (id: string, data: unknown)      => post(`/api/collaborations/${id}/requests`, data),
   getRequests:   (id: string)                     => get(`/api/collaborations/${id}/requests`),
+  getMyRequests: (id: string)                     => get(`/api/collaborations/${id}/my-requests`),
   updateRequest: (id: string, rid: string, s: string) => patch(`/api/collaborations/${id}/requests/${rid}`, { status: s }),
   addUpdate:     (id: string, data: unknown)      => post(`/api/collaborations/${id}/updates`, data),
   report:        (id: string, data: unknown)      => post(`/api/collaborations/${id}/reports`, data),

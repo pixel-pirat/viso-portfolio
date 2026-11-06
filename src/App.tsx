@@ -41,7 +41,6 @@ const ProposalsAdmin    = lazy(() => import("./admin/ProposalsAdmin"));
 const ClientProjectsAdmin = lazy(() => import("./admin/ClientProjectsAdmin"));
 const AppointmentsAdmin = lazy(() => import("./admin/AppointmentsAdmin"));
 const CollaborationsAdmin = lazy(() => import("./admin/CollaborationsAdmin"));
-const MigrateAdmin      = lazy(() => import("./admin/MigrateAdmin"));
 
 // ─── Portal — lazy chunk (only loaded when visiting /portal) ─
 const PortalLayout       = lazy(() => import("./portal/PortalLayout"));
@@ -108,7 +107,6 @@ const App = () => (
                   <Route path="client-projects" element={<ClientProjectsAdmin />} />
                   <Route path="appointments"    element={<AppointmentsAdmin />} />
                   <Route path="collaborations"  element={<CollaborationsAdmin />} />
-                  <Route path="migrate"         element={<MigrateAdmin />} />
                   <Route path="users"           element={<UsersAdmin />} />
                   <Route path="analytics"       element={<AnalyticsAdmin />} />
                   <Route path="settings"        element={<SettingsAdmin />} />

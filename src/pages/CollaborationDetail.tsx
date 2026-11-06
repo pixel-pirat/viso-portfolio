@@ -65,6 +65,18 @@ const CollaborationDetail = () => {
     };
   }, [rawCollab]);
 
+  // Must run on every render (not after the early returns below) — React
+  // hooks can't be called conditionally.
+  const updates = useMemo(() => {
+    return ((collab?.updates ?? []) as any[]).map((u) => ({
+      ...u,
+      authorId: u.authorId ?? u.author_id,
+      authorName: u.authorName ?? u.author_name,
+      authorRole: u.authorRole ?? u.author_role,
+      createdAt: u.createdAt ?? u.created_at,
+    })).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  }, [collab]);
+
   const accepted = hasConsentFromStorage(session?.id);
 
   if (isLoading) {
@@ -95,16 +107,6 @@ const CollaborationDetail = () => {
   const isOwner = !!session && collab.ownerId === session.id;
   const visible = isVisibleTo(collab, session?.id) || isOwner;
   const ndaGated = collab.requiresNda && !isOwner && !ndaAck;
-
-  const updates = useMemo(() => {
-    return ((collab.updates ?? []) as any[]).map((u) => ({
-      ...u,
-      authorId: u.authorId ?? u.author_id,
-      authorName: u.authorName ?? u.author_name,
-      authorRole: u.authorRole ?? u.author_role,
-      createdAt: u.createdAt ?? u.created_at,
-    })).sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
-  }, [collab.updates]);
 
   const submitInterest = async () => {
     if (!session) return navigate("/portal");

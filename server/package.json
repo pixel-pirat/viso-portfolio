@@ -9,7 +9,9 @@
     "build": "tsc && node -e \"require('fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql')\"",
     "start": "node dist/index.js",
     "db:migrate": "node -e \"require('./dist/db/migrate').runMigration()\"",
-    "db:seed": "node -e \"require('./dist/db/seed').runSeed()\""
+    "db:seed": "node -e \"require('./dist/db/seed').runSeed()\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -32,8 +34,11 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.6",
+    "@types/supertest": "^6.0.2",
     "@types/uuid": "^10.0.0",
+    "supertest": "^7.0.0",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^3.2.4"
   }
 }
