@@ -78,8 +78,12 @@ cp .env.example .env.local
    - **Root Directory**: `.` (project root)
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
-4. Add **Environment Variable**:
-   - `VITE_API_URL` → `https://digital-canvas-studio-api.onrender.com`
+4. **Do not set `VITE_API_URL`** — leave it unset in production. `vercel.json`
+   proxies `/api/*` and `/health` to the Render backend at build/request time,
+   so the frontend calls its own domain and the request is forwarded
+   server-side. This is what makes the login cookie first-party instead of a
+   blocked third-party cookie. If you fork this to a different Render URL,
+   update the `destination` in `vercel.json`'s `rewrites` to match.
 5. Deploy!
 
 ### C. Update CORS on Render
@@ -89,6 +93,10 @@ After Vercel gives you a URL (e.g. `https://digital-canvas-studio.vercel.app`):
 1. Go back to Render → your API service → Environment
 2. Set `ALLOWED_ORIGINS` → `https://digital-canvas-studio.vercel.app`
 3. Render will redeploy automatically
+
+(The proxy forwards the browser's original `Origin` header through to Render
+unchanged, so CORS still needs your real Vercel domain in this list even
+though requests are no longer going directly cross-origin from the browser.)
 
 ---
 

@@ -43,8 +43,8 @@ router.post("/read-all", requireAuth, async (req: Request, res: Response, next: 
   }
 });
 
-// POST /api/notifications (auth — broadcast/create)
-router.post("/", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+// POST /api/notifications (admin only — broadcast/create)
+router.post("/", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { kind, title, body, href, audience = "admin" } = req.body;
     const [row] = await query<{ id: string }>(

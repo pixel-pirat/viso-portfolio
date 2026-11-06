@@ -30,11 +30,15 @@ export function signToken(payload: AuthPayload): string {
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   let token: string | undefined;
 
-  const header = req.headers.authorization;
-  if (header?.startsWith("Bearer ")) {
-    token = header.slice(7);
-  } else if (req.cookies && req.cookies.token) {
+  // Cookie is the primary auth mechanism (set by /api/auth/login and /register).
+  // Bearer header stays supported as a fallback for direct API calls (curl, Postman, etc).
+  if (req.cookies && req.cookies.token) {
     token = req.cookies.token;
+  } else {
+    const header = req.headers.authorization;
+    if (header?.startsWith("Bearer ")) {
+      token = header.slice(7);
+    }
   }
 
   if (!token) {

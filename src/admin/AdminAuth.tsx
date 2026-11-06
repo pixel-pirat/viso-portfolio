@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { authApi, setToken, clearToken, getToken } from "@/lib/api";
+import { authApi } from "@/lib/api";
 
 export type AccountRole = "admin" | "editor" | "viewer" | "client";
 
@@ -10,9 +10,6 @@ export type Account = {
   role: AccountRole;
 };
 
-// Keep for backward compat — not used for auth anymore
-export const ADMIN_PASSWORD = "studio2026";
-
 type Session = { id: string; email: string; name: string; role: AccountRole } | null;
 
 type AuthCtx = {
@@ -21,8 +18,6 @@ type AuthCtx = {
   isAdmin: boolean;
   /** Log in via the API (cookie-based). Returns error string on failure. */
   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>;
-  /** Legacy password gate — kept for backward compat, just calls login with admin creds */
-  legacyLogin: (password: string) => Promise<boolean>;
   signup: (input: { name: string; email: string; password: string; role?: AccountRole }) => Promise<{ ok: true } | { ok: false; error: string }>;
   logout: () => Promise<void>;
   /** Kept for compat — returns empty array since accounts are now server-side */
@@ -35,16 +30,14 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session>(null);
   const [loading, setLoading] = useState(true);
 
-  // On mount — restore session from token in sessionStorage
+  // On mount — the httpOnly auth cookie (if any) is sent automatically,
+  // so we just ask the API who we are.
   useEffect(() => {
-    const token = getToken();
-    if (!token) { setLoading(false); return; }
     authApi.me()
       .then((user) => {
         setSession({ id: user.id, email: user.email, name: user.name, role: user.role as AccountRole });
       })
       .catch(() => {
-        clearToken();
         setSession(null);
       })
       .finally(() => setLoading(false));
@@ -60,7 +53,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const login: AuthCtx["login"] = useCallback(async (email, password) => {
     try {
       const res = await authApi.login(email, password);
-      setToken(res.token); // store in sessionStorage + memory
       const u = res.user;
       setSession({ id: u.id, email: u.email, name: u.name, role: u.role as AccountRole });
       return { ok: true };
@@ -69,19 +61,12 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const legacyLogin = useCallback(async (password: string) => {
-    if (password !== ADMIN_PASSWORD) return false;
-    const result = await login("alex@studio.com", password);
-    return result.ok;
-  }, [login]);
-
   const signup: AuthCtx["signup"] = useCallback(async ({ name, email, password, role = "client" }) => {
     if (!name.trim()) return { ok: false, error: "Name is required." };
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return { ok: false, error: "Enter a valid email." };
     if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
     try {
       const res = await authApi.register(name, email, password);
-      setToken(res.token);
       const u = res.user;
       setSession({ id: u.id, email: u.email, name: u.name, role: u.role as AccountRole });
       return { ok: true };
@@ -104,7 +89,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const isAdmin = session?.role === "admin" || session?.role === "editor";
 
   return (
-    <Ctx.Provider value={{ isAuthed, session, isAdmin, login, legacyLogin, signup, logout, accounts: [] }}>
+    <Ctx.Provider value={{ isAuthed, session, isAdmin, login, signup, logout, accounts: [] }}>
       {children}
     </Ctx.Provider>
   );

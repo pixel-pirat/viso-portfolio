@@ -1,57 +1,34 @@
 /**
- * Centralized API client — Bearer token auth stored in memory only.
+ * Centralized API client — httpOnly cookie auth.
  *
- * Cross-domain cookie auth (vercel.app → onrender.com) is blocked by
- * modern browsers as third-party cookies. We use Bearer tokens instead,
- * kept in module-level memory (lost on page refresh — intentional for
- * security). Session is restored via /api/auth/me on mount using a
- * refresh token stored in sessionStorage.
+ * In production, Vercel proxies /api/* to the Render backend (see
+ * vercel.json), so the browser only ever talks to its own origin and the
+ * auth cookie is first-party — no cross-site cookie blocking. In local dev
+ * there's no proxy, so VITE_API_URL points straight at the local API server
+ * (cookies still work there since both run on "localhost", just different
+ * ports, which browsers treat as same-site).
+ *
+ * The token itself is never touched by frontend JS — it lives only in the
+ * httpOnly cookie, so it isn't readable by any script (including an XSS
+ * payload), unlike the sessionStorage approach this replaces.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
-
-// ─── In-memory token store ───────────────────────────────────
-// Token lives only in module memory — never written to localStorage
-let _token: string | null = null;
-
-const SESSION_KEY = "studio:session_token"; // sessionStorage only — cleared on tab close
-
-export function getToken(): string | null {
-  if (_token) return _token;
-  // Restore from sessionStorage for page refresh within same tab
-  try { _token = sessionStorage.getItem(SESSION_KEY); } catch { /* ignore */ }
-  return _token;
-}
-
-export function setToken(token: string): void {
-  _token = token;
-  try { sessionStorage.setItem(SESSION_KEY, token); } catch { /* ignore */ }
-}
-
-export function clearToken(): void {
-  _token = null;
-  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-}
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 // ─── Core fetch wrapper ──────────────────────────────────────
 async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> ?? {}),
   };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
-    credentials: "omit", // No cross-domain cookies needed — Bearer handles auth
+    credentials: "include", // send/receive the httpOnly auth cookie
   });
 
   if (res.status === 401) {
-    clearToken();
     window.dispatchEvent(new CustomEvent("studio:unauthorized"));
   }
 
@@ -76,11 +53,11 @@ const del   = <T = unknown>(path: string) => apiFetch<T>(path, { method: "DELETE
 // ─── Auth ────────────────────────────────────────────────────
 export const authApi = {
   login:    (email: string, password: string) =>
-    post<{ token: string; user: { id: string; name: string; email: string; role: string } }>("/api/auth/login", { email, password }),
+    post<{ user: { id: string; name: string; email: string; role: string } }>("/api/auth/login", { email, password }),
   register: (name: string, email: string, password: string) =>
-    post<{ token: string; user: { id: string; name: string; email: string; role: string } }>("/api/auth/register", { name, email, password }),
+    post<{ user: { id: string; name: string; email: string; role: string } }>("/api/auth/register", { name, email, password }),
   me:       () => get<{ id: string; name: string; email: string; role: string; avatar_url: string }>("/api/auth/me"),
-  logout:   () => { clearToken(); return Promise.resolve({ success: true }); },
+  logout:   () => post<{ success: boolean }>("/api/auth/logout", {}),
 };
 
 // ─── Services ────────────────────────────────────────────────

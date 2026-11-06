@@ -6,6 +6,15 @@ import { signToken, requireAuth, AuthPayload } from "../middleware/auth";
 
 const router = Router();
 
+// Cookie is first-party now that the frontend proxies /api/* through its own
+// domain (see vercel.json) — no more cross-site SameSite=None requirement.
+const AUTH_COOKIE_OPTS = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "lax" as const,
+  path: "/",
+};
+
 // POST /api/auth/register
 router.post(
   "/register",
@@ -22,11 +31,10 @@ router.post(
         return;
       }
 
-      const { name, email, password, role = "client" } = req.body as {
+      const { name, email, password } = req.body as {
         name: string;
         email: string;
         password: string;
-        role?: string;
       };
 
       const existing = await queryOne("SELECT id FROM accounts WHERE email=$1", [email]);
@@ -36,13 +44,14 @@ router.post(
       }
 
       const hash = await bcrypt.hash(password, 12);
-      const safeRole = ["admin", "editor", "viewer", "client"].includes(role) ? role : "client";
 
+      // Public registration always creates a "client" account. Admin/editor
+      // accounts can only be created by an existing admin via POST /api/users.
       const [account] = await query<{ id: string; name: string; email: string; role: string }>(
         `INSERT INTO accounts (name, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)
+         VALUES ($1, $2, $3, 'client')
          RETURNING id, name, email, role`,
-        [name.trim(), email, hash, safeRole]
+        [name.trim(), email, hash]
       );
 
       const token = signToken({
@@ -52,15 +61,9 @@ router.post(
         role: account.role as AuthPayload["role"],
       });
 
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
+      res.cookie("token", token, { ...AUTH_COOKIE_OPTS, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
-      res.status(201).json({ token, user: { id: account.id, name: account.name, email: account.email, role: account.role } });
+      res.status(201).json({ user: { id: account.id, name: account.name, email: account.email, role: account.role } });
     } catch (err) {
       next(err);
     }
@@ -107,15 +110,9 @@ router.post(
         role: account.role as AuthPayload["role"],
       });
 
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
+      res.cookie("token", token, { ...AUTH_COOKIE_OPTS, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
-      res.json({ token, user: { id: account.id, name: account.name, email: account.email, role: account.role } });
+      res.json({ user: { id: account.id, name: account.name, email: account.email, role: account.role } });
     } catch (err) {
       next(err);
     }
@@ -141,12 +138,7 @@ router.get("/me", requireAuth, async (req: Request, res: Response, next: NextFun
 
 // POST /api/auth/logout
 router.post("/logout", (_req: Request, res: Response) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    path: "/",
-  });
+  res.clearCookie("token", AUTH_COOKIE_OPTS);
   res.json({ success: true });
 });
 
